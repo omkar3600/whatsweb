@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables
+.env
+.env*.local
+**/.env
+**/.env*.local
+!.env.example
+!**/.env.example
+
+# Build & Distribution
+dist/
+**/dist/
+.next/
+**/.next/
+.open-next/
+**/.open-next/
+out/
+**/out/
+build/
+**/build/
+
+# Prisma generated files
+**/generated/prisma/
+
+# TypeScript & Next.js cache
+*.tsbuildinfo
+next-env.d.ts
+
+# Testing & Coverage
+coverage/
+**/coverage/
+
+# Misc & OS files
+.DS_Store
+Thumbs.db
+*.pem
+.vercel/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
