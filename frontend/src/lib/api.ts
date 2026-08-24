@@ -7,7 +7,32 @@ export const api = axios.create({
 
 export const fetcher = (url: string) => api.get(url).then(res => res.data);
 
-api.interceptors.request.use((config) => {
+// Lightweight in-memory traffic instrumentation for development & diagnostics
+if (typeof window !== 'undefined') {
+    (window as any).__WHATSHUB_TRAFFIC__ = (window as any).__WHATSHUB_TRAFFIC__ || {
+        totalRequests: 0,
+        totalBytes: 0,
+        byFeature: {} as Record<string, { requests: number; bytes: number; maxBytes: number }>,
+        recent: [] as Array<{ time: string; feature: string; url: string; bytes: number; durationMs: number }>,
+    };
+}
+
+function classifyFrontendFeature(url: string = ''): string {
+    const u = url.toLowerCase();
+    if (u.includes('/conversations') || u.includes('/messages') || u.includes('/chat')) return 'inbox';
+    if (u.includes('/contacts')) return 'contacts';
+    if (u.includes('/campaigns')) return 'campaigns';
+    if (u.includes('/shops/me') || u.includes('/shops/overview')) return 'dashboard';
+    if (u.includes('/media')) return 'storage_media';
+    if (u.includes('/whatsapp')) return 'whatsapp_api';
+    if (u.includes('/ai') || u.includes('/chatbot')) return 'ai_agent';
+    if (u.includes('/workflows')) return 'workflows';
+    if (u.includes('/auth') || u.includes('/users/me')) return 'authentication';
+    return 'other';
+}
+
+api.interceptors.request.use((config: any) => {
+    config._startTime = Date.now();
     if (typeof window !== 'undefined') {
         const token = localStorage.getItem('access_token');
         if (token) {
@@ -18,7 +43,50 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-    (response) => response,
+    (response: any) => {
+        if (typeof window !== 'undefined' && response.config) {
+            const durationMs = Date.now() - (response.config._startTime || Date.now());
+            const url = response.config.url || '';
+            const feature = classifyFrontendFeature(url);
+            
+            let bytes = 0;
+            if (response.headers && response.headers['content-length']) {
+                bytes = parseInt(response.headers['content-length'], 10) || 0;
+            } else if (response.data) {
+                try {
+                    bytes = typeof response.data === 'string' ? response.data.length : JSON.stringify(response.data).length;
+                } catch {
+                    bytes = 0;
+                }
+            }
+
+            const store = (window as any).__WHATSHUB_TRAFFIC__;
+            if (store) {
+                store.totalRequests += 1;
+                store.totalBytes += bytes;
+                const featStats = store.byFeature[feature] || { requests: 0, bytes: 0, maxBytes: 0 };
+                featStats.requests += 1;
+                featStats.bytes += bytes;
+                featStats.maxBytes = Math.max(featStats.maxBytes, bytes);
+                store.byFeature[feature] = featStats;
+
+                if (store.recent.length >= 200) store.recent.shift();
+                store.recent.push({
+                    time: new Date().toISOString(),
+                    feature,
+                    url: url.split('?')[0],
+                    bytes,
+                    durationMs,
+                });
+            }
+
+            const isDebug = localStorage.getItem('TRAFFIC_DEBUG') === 'true' || process.env.NODE_ENV === 'development';
+            if (isDebug && bytes > 500 * 1024) {
+                console.warn(`[TRAFFIC_WARNING] Large response on ${url}: ${(bytes / 1024).toFixed(1)} KB in ${durationMs}ms`);
+            }
+        }
+        return response;
+    },
     (error) => {
         if (typeof window !== 'undefined' && error.response?.status === 401) {
             localStorage.removeItem('user');

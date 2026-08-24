@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Put, Body, Param, UseGuards, Delete, Query, Request } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { SystemConfigService } from './system-config.service';
+import { TrafficMonitorService } from '../common/services/traffic-monitor.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -12,6 +13,7 @@ export class AdminController {
     constructor(
         private readonly adminService: AdminService,
         private readonly systemConfigService: SystemConfigService,
+        private readonly trafficMonitorService: TrafficMonitorService,
     ) { }
 
     @Post('shops')
@@ -125,5 +127,12 @@ export class AdminController {
     async deletePlatformConfig(@Param('key') key: string) {
         await this.systemConfigService.delete(key);
         return { message: `Config key "${key}" removed (will fall back to env var)` };
+    }
+
+    /** Returns in-memory traffic diagnostics and bandwidth attribution metrics */
+    @Get('traffic-analytics')
+    async getTrafficAnalytics(@Query('window') window?: string) {
+        const windowMinutes = window ? parseInt(window, 10) : 0;
+        return this.trafficMonitorService.getTrafficSummary(isNaN(windowMinutes) ? 0 : windowMinutes);
     }
 }

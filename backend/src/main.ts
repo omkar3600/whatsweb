@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import cookieParser from 'cookie-parser';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { TrafficMonitorInterceptor } from './common/interceptors/traffic-monitor.interceptor';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -55,6 +56,9 @@ async function bootstrap() {
 
   // Global exception filter
   app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // Global traffic monitoring and bandwidth attribution interceptor
+  app.useGlobalInterceptors(app.get(TrafficMonitorInterceptor));
 
   // CORS — allow frontend origins
   const allowedOrigins = process.env.CORS_ORIGINS
