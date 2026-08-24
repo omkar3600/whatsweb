@@ -64,6 +64,39 @@ export class MediaService {
         }
     }
 
+    async uploadBuffer(shopId: string, buffer: Buffer, mimeType: string, filename: string): Promise<string> {
+        const safeName = `${Date.now()}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        const key = `incoming/${shopId}/${safeName}`;
+
+        if (process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY) {
+            await this.s3.send(new PutObjectCommand({
+                Bucket: this.bucketName,
+                Key: key,
+                Body: buffer,
+                ContentType: mimeType,
+            }));
+
+            const fileUrl = this.publicUrl
+                ? `${this.publicUrl}/${key}`
+                : `https://${this.bucketName}.r2.dev/${key}`;
+
+            await this.prisma.mediaFile.create({
+                data: {
+                    shopId,
+                    fileName: filename,
+                    fileUrl,
+                    fileType: mimeType,
+                    fileSize: buffer.length,
+                },
+            }).catch(() => {});
+
+            this.logger.log(`[Media] Uploaded incoming media to R2: ${fileUrl}`);
+            return fileUrl;
+        }
+
+        throw new Error('R2 credentials not configured');
+    }
+
     async getMediaFiles(shopId: string, limit: number = 100) {
         const take = limit > 0 ? Math.min(limit, 500) : 100;
         return this.prisma.mediaFile.findMany({

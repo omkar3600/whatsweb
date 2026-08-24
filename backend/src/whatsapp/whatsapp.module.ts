@@ -8,12 +8,14 @@ import { ChatModule } from '../chat/chat.module';
 import { WorkflowsModule } from '../workflows/workflows.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ConsentModule } from '../consent/consent.module';
+import { MediaModule } from '../media/media.module';
 
 @Module({
   imports: [
     HttpModule,
     ChatbotModule,
     ChatModule,
+    MediaModule,
     forwardRef(() => WorkflowsModule),
     BullModule.registerQueue({ name: 'ai-agent-queue' }),
     ConsentModule,

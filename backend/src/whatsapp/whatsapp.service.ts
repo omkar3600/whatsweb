@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef, BadRequestException, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpService } from '@nestjs/axios';
 import { CryptoService } from '../common/services/crypto.service';
@@ -11,6 +11,7 @@ import { ChatbotService } from '../chatbot/chatbot.service';
 import { WorkflowEngineService } from '../workflows/engine/workflow-engine.service';
 import { TriggerRegistry } from '../workflows/engine/registries/trigger.registry';
 import { ConsentService } from '../consent/consent.service';
+import { MediaService } from '../media/media.service';
 
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -46,6 +47,8 @@ export class WhatsappService {
         @InjectQueue('ai-agent-queue')
         private aiQueue: Queue,
         private consentService: ConsentService,
+        @Optional()
+        private mediaService?: MediaService,
     ) { }
 
     /** Invalidate cached credentials when credentials are updated */
@@ -527,33 +530,47 @@ export class WhatsappService {
                             responseType: 'arraybuffer',
                         })
                     );
-                    // Upload to Supabase Storage
-                    const dbUrlMatch = (process.env.DATABASE_URL || '').match(/postgres\.([a-z]+):/);
-                    const projectRef = process.env.SUPABASE_PROJECT_REF || (dbUrlMatch ? dbUrlMatch[1] : '');
-                    const supabaseUrl = process.env.SUPABASE_URL || `https://${projectRef}.supabase.co`;
-                    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || '';
-                    const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'media';
                     const ext = mediaObj.mime_type ? '.' + mediaObj.mime_type.split('/')[1].split(';')[0] : '';
-                    const fileName = `incoming/${shopId}/${mediaObj.id}${ext}`;
+                    const fileName = `${mediaObj.id}${ext}`;
                     const mimeType = mediaObj.mime_type || 'application/octet-stream';
+                    const fileBuffer = Buffer.from(fileResp.data);
 
-                    await firstValueFrom(
-                        this.httpService.post(
-                            `${supabaseUrl}/storage/v1/object/${bucket}/${fileName}`,
-                            Buffer.from(fileResp.data),
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${supabaseKey}`,
-                                    apikey: supabaseKey,
-                                    'Content-Type': mimeType,
-                                    'x-upsert': 'true',
-                                },
-                                maxBodyLength: 50 * 1024 * 1024,
-                                maxContentLength: 50 * 1024 * 1024,
-                            }
-                        )
-                    );
-                    mediaUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
+                    // Prefer Cloudflare R2 via MediaService (0 egress cost)
+                    if (this.mediaService && (process.env.R2_ACCESS_KEY_ID || process.env.R2_BUCKET_NAME)) {
+                        try {
+                            mediaUrl = await this.mediaService.uploadBuffer(shopId, fileBuffer, mimeType, fileName);
+                        } catch (r2Err: any) {
+                            this.logger.warn(`[Media] R2 upload failed, falling back to Supabase: ${r2Err?.message}`);
+                        }
+                    }
+
+                    // Fallback to Supabase Storage if R2 is not configured or failed
+                    if (!mediaUrl) {
+                        const dbUrlMatch = (process.env.DATABASE_URL || '').match(/postgres\.([a-z]+):/);
+                        const projectRef = process.env.SUPABASE_PROJECT_REF || (dbUrlMatch ? dbUrlMatch[1] : '');
+                        const supabaseUrl = process.env.SUPABASE_URL || `https://${projectRef}.supabase.co`;
+                        const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || '';
+                        const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'media';
+                        const storageFileName = `incoming/${shopId}/${mediaObj.id}${ext}`;
+
+                        await firstValueFrom(
+                            this.httpService.post(
+                                `${supabaseUrl}/storage/v1/object/${bucket}/${storageFileName}`,
+                                fileBuffer,
+                                {
+                                    headers: {
+                                        Authorization: `Bearer ${supabaseKey}`,
+                                        apikey: supabaseKey,
+                                        'Content-Type': mimeType,
+                                        'x-upsert': 'true',
+                                    },
+                                    maxBodyLength: 50 * 1024 * 1024,
+                                    maxContentLength: 50 * 1024 * 1024,
+                                }
+                            )
+                        );
+                        mediaUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${storageFileName}`;
+                    }
                 } catch (mediaErr: any) {
                     this.logger.error(`[Media] Failed to download media ${mediaObj?.id}: ${mediaErr?.message}`);
                     mediaUrl = undefined;
