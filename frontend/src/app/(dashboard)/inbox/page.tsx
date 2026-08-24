@@ -25,7 +25,8 @@ import { Button } from '@/components/ui/button';
 // ────────────────────────────────────────────────────────────────────────────
 const globalCache = {
     conversations: [] as any[],
-    messages: {} as Record<string, any[]>
+    messages: {} as Record<string, any[]>,
+    templates: [] as any[]
 };
 
 // Helper to extract text from template payload
@@ -257,7 +258,7 @@ function InboxContent() {
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [inputMsg, setInputMsg] = useState('');
     const [showMobileChat, setShowMobileChat] = useState(false);
-    const [templates, setTemplates] = useState<any[]>([]);
+    const [templates, setTemplates] = useState<any[]>(globalCache.templates);
     const [showTemplatePicker, setShowTemplatePicker] = useState(false);
     const [aiPaused, setAiPaused] = useState(false);
     const [togglingAi, setTogglingAi] = useState(false);
@@ -349,10 +350,15 @@ function InboxContent() {
             }
             fetchMessages(activeConvo.id);
             setAiPaused(activeConvo.aiPaused ?? false);
-            api.put(`/conversations/${activeConvo.id}/read`).then(() => fetchConversations()).catch(() => {});
+            api.put(`/conversations/${activeConvo.id}/read`).catch(() => {});
         }
-        fetchTemplates();
     }, [activeConvo?.id]);
+
+    useEffect(() => {
+        if (globalCache.templates.length === 0) {
+            fetchTemplates();
+        }
+    }, []);
 
     useEffect(() => {
         if (messages.length === 0) return;
@@ -562,7 +568,9 @@ function InboxContent() {
     const fetchTemplates = async () => {
         try {
             const res = await api.get('/templates');
-            setTemplates(res.data);
+            const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : []);
+            setTemplates(list);
+            globalCache.templates = list;
         } catch (e) { console.error(e); }
     };
 

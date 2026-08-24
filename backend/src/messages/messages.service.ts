@@ -13,11 +13,21 @@ export class MessagesService {
         private chatGateway: ChatGateway,
     ) { }
 
-    async getMessages(shopId: string, conversationId: string) {
-        return this.prisma.message.findMany({
-            where: { shopId, conversationId },
-            orderBy: { timestamp: 'asc' },
+    async getMessages(shopId: string, conversationId: string, limit?: number, before?: string) {
+        const take = limit && limit > 0 ? Math.min(limit, 500) : 200;
+        const where: any = { shopId, conversationId };
+        if (before) {
+            where.timestamp = { lt: new Date(before) };
+        }
+
+        const messages = await this.prisma.message.findMany({
+            where,
+            orderBy: { timestamp: 'desc' },
+            take,
         });
+
+        // Reverse to return in chronological ascending order
+        return messages.reverse();
     }
 
     async sendMessage(shopId: string, conversationId: string, data: any) {

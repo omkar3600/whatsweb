@@ -24,7 +24,7 @@ export class MediaController {
     }
 
     @Get()
-    async getMediaFiles(@GetUser() user: any) {
+    async getMediaFiles(@GetUser() user: any, @Param() params?: any) {
         return this.mediaService.getMediaFiles(user.shopId);
     }
 

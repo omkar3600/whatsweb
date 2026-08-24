@@ -188,8 +188,15 @@ export class CampaignsService {
 
         const contacts = await this.prisma.contact.findMany({
             where: { shopId },
-            include: { conversations: { take: 1, orderBy: { lastMessageAt: 'desc' } } },
-        });
+            select: {
+                id: true,
+                name: true,
+                phone: true,
+                tags: true,
+                city: true,
+                conversations: { take: 1, orderBy: { lastMessageAt: 'desc' }, select: { lastMessageAt: true } }
+            },
+        }) as any[];
 
         const consentMap = await this.consentService.getConsentStatusMap(
             shopId,
@@ -425,14 +432,14 @@ export class CampaignsService {
         const campaign = await this.prisma.campaign.findFirst({ where: { id: campaignId, shopId } });
         if (!campaign) throw new NotFoundException('Campaign not found');
 
-        // For each phone, find contact and merge tags
-        const results: any[] = [];
-        for (const phone of phones) {
-            const contact = await this.prisma.contact.findUnique({
-                where: { shopId_phone: { shopId, phone } },
-            });
-            if (!contact) continue;
+        // Find all contacts matching phones in a single query
+        const contacts = await this.prisma.contact.findMany({
+            where: { shopId, phone: { in: phones } },
+            select: { id: true, tags: true }
+        });
 
+        const results: any[] = [];
+        for (const contact of contacts) {
             const existingTags = (contact.tags as string[]) || [];
             const mergedTags = Array.from(new Set([...existingTags, ...tags]));
 
@@ -457,18 +464,19 @@ export class CampaignsService {
             ? tags.map(t => String(t).trim().toLowerCase()).filter(Boolean)
             : [];
 
-        const results: any[] = [];
-        for (const phone of phones) {
-            const contact = await this.prisma.contact.findUnique({
-                where: { shopId_phone: { shopId, phone } },
-            });
-            if (!contact) continue;
+        // Find all contacts matching phones in a single query
+        const contacts = await this.prisma.contact.findMany({
+            where: { shopId, phone: { in: phones } },
+            select: { id: true, tags: true }
+        });
 
+        const results: any[] = [];
+        const removeSet = new Set(tagsToRemove);
+        for (const contact of contacts) {
             const existingTags = (contact.tags as string[]) || [];
             let updatedTags: string[] = [];
             if (!removeAll) {
                 if (tagsToRemove.length > 0) {
-                    const removeSet = new Set(tagsToRemove);
                     updatedTags = existingTags.filter(t => !removeSet.has(String(t).trim().toLowerCase()));
                 } else {
                     updatedTags = existingTags;

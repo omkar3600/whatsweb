@@ -5,14 +5,23 @@ import * as XLSX from 'xlsx';
 @Injectable()
 export class ContactsService {
     private readonly logger = new Logger(ContactsService.name);
+    private tagCountCache = new Map<string, { data: { tag: string; count: number }[]; expiresAt: number }>();
 
     constructor(
         private prisma: PrismaService
     ) { }
 
+    clearTagCache(shopId?: string) {
+        if (shopId) {
+            this.tagCountCache.delete(shopId);
+        } else {
+            this.tagCountCache.clear();
+        }
+    }
+
     async createContact(shopId: string, data: any) {
         const { name, phone, tags, city, notes } = data;
-        return this.prisma.contact.create({
+        const contact = await this.prisma.contact.create({
             data: {
                 shopId,
                 name,
@@ -22,6 +31,8 @@ export class ContactsService {
                 notes,
             },
         });
+        this.clearTagCache(shopId);
+        return contact;
     }
 
     async importFromExcel(shopId: string, file: Express.Multer.File): Promise<{ imported: number; skipped: number; errors: string[] }> {
@@ -299,6 +310,7 @@ export class ContactsService {
                 where,
                 include,
                 orderBy,
+                take: 1000,
             });
             return contacts.map(mapContact);
         } catch (err: any) {
@@ -322,7 +334,7 @@ export class ContactsService {
             where: { id },
             data: { name, phone, tags, city, notes },
         });
-
+        this.clearTagCache(shopId);
         return contact;
     }
 
@@ -338,6 +350,7 @@ export class ContactsService {
         }
         await this.prisma.campaignContact.updateMany({ where: { contactId: id }, data: { contactId: null } });
         
+        this.clearTagCache(shopId);
         return this.prisma.contact.delete({
             where: { id },
         });
@@ -358,6 +371,7 @@ export class ContactsService {
             data: { contactId: null }
         });
         
+        this.clearTagCache(shopId);
         return this.prisma.contact.deleteMany({
             where: { shopId, id: { in: ids } },
         });
@@ -452,26 +466,57 @@ export class ContactsService {
 
     async getContactTagsWithCount(shopId: string): Promise<{ tag: string; count: number }[]> {
         if (!shopId) return [];
-        const contacts = await this.prisma.contact.findMany({
-            where: { shopId },
-            select: { tags: true },
-        });
 
-        const tagMap: Record<string, number> = {};
-        for (const c of contacts) {
-            if (Array.isArray(c.tags)) {
-                for (const t of c.tags) {
-                    if (typeof t === 'string' && t.trim()) {
-                        const tagStr = t.trim();
-                        tagMap[tagStr] = (tagMap[tagStr] || 0) + 1;
+        const cached = this.tagCountCache.get(shopId);
+        if (cached && cached.expiresAt > Date.now()) {
+            return cached.data;
+        }
+
+        try {
+            // PostgreSQL unnest JSONB array and aggregate counts directly in the database engine
+            const rawResult = await this.prisma.$queryRaw<{ tag: string; count: bigint | number }[]>`
+                SELECT elem AS tag, COUNT(*)::int AS count
+                FROM "Contact",
+                     jsonb_array_elements_text(CASE WHEN tags IS NOT NULL AND jsonb_typeof(tags::jsonb) = 'array' THEN tags::jsonb ELSE '[]'::jsonb END) AS elem
+                WHERE "shopId" = ${shopId} AND elem IS NOT NULL AND TRIM(elem) != ''
+                GROUP BY elem
+                ORDER BY count DESC
+            `;
+
+            const data = (rawResult || []).map(r => ({
+                tag: String(r.tag).trim(),
+                count: Number(r.count || 0)
+            })).filter(t => t.tag.length > 0);
+
+            this.tagCountCache.set(shopId, { data, expiresAt: Date.now() + 30 * 1000 });
+            return data;
+        } catch (err: any) {
+            this.logger.warn(`[getContactTagsWithCount] Raw SQL failed, falling back to Prisma: ${err?.message}`);
+            const contacts = await this.prisma.contact.findMany({
+                where: { shopId },
+                select: { tags: true },
+                take: 5000,
+            });
+
+            const tagMap: Record<string, number> = {};
+            for (const c of contacts) {
+                if (Array.isArray(c.tags)) {
+                    for (const t of c.tags) {
+                        if (typeof t === 'string' && t.trim()) {
+                            const tagStr = t.trim();
+                            tagMap[tagStr] = (tagMap[tagStr] || 0) + 1;
+                        }
                     }
                 }
             }
-        }
 
-        return Object.entries(tagMap)
-            .map(([tag, count]) => ({ tag, count }))
-            .sort((a, b) => b.count - a.count);
+            const data = Object.entries(tagMap)
+                .map(([tag, count]) => ({ tag, count }))
+                .sort((a, b) => b.count - a.count);
+
+            this.tagCountCache.set(shopId, { data, expiresAt: Date.now() + 30 * 1000 });
+            return data;
+        }
     }
 
     async addTagsBulk(shopId: string, body: { contactIds?: string[]; phones?: string[]; tags: string[] }) {
@@ -484,7 +529,7 @@ export class ContactsService {
         else if (phones && phones.length > 0) where.phone = { in: phones };
         else return { updated: 0 };
 
-        const contacts = await this.prisma.contact.findMany({ where });
+        const contacts = await this.prisma.contact.findMany({ where, select: { id: true, tags: true } });
         let updatedCount = 0;
         for (const c of contacts) {
             const existing = (c.tags as string[]) || [];
@@ -495,6 +540,7 @@ export class ContactsService {
             });
             updatedCount++;
         }
+        this.clearTagCache(shopId);
         return { updated: updatedCount, message: `Tags added to ${updatedCount} contacts` };
     }
 
@@ -507,7 +553,7 @@ export class ContactsService {
         else if (phones && phones.length > 0) where.phone = { in: phones };
         else return { updated: 0 };
 
-        const contacts = await this.prisma.contact.findMany({ where });
+        const contacts = await this.prisma.contact.findMany({ where, select: { id: true, tags: true } });
         let updatedCount = 0;
         const removeSet = new Set(tagsToRemove);
 
@@ -520,6 +566,7 @@ export class ContactsService {
             });
             updatedCount++;
         }
+        this.clearTagCache(shopId);
         return { updated: updatedCount, message: `Tags removed from ${updatedCount} contacts` };
     }
 }

@@ -60,10 +60,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     useEffect(() => {
         if (user?.shopId) {
+            const cachedPic = localStorage.getItem(`whatshub_profile_pic_${user.shopId}`);
+            if (cachedPic) {
+                setProfilePicture(cachedPic);
+            }
             import('@/lib/api').then(({ api }) => {
                 api.get('/whatsapp/profile').then((res) => {
                     if (res.data?.profile_picture_url) {
                         setProfilePicture(res.data.profile_picture_url);
+                        localStorage.setItem(`whatshub_profile_pic_${user.shopId}`, res.data.profile_picture_url);
                     }
                 }).catch(console.error);
             });

@@ -64,10 +64,12 @@ export class MediaService {
         }
     }
 
-    async getMediaFiles(shopId: string) {
+    async getMediaFiles(shopId: string, limit: number = 100) {
+        const take = limit > 0 ? Math.min(limit, 500) : 100;
         return this.prisma.mediaFile.findMany({
             where: { shopId },
             orderBy: { createdAt: 'desc' },
+            take,
         });
     }
 

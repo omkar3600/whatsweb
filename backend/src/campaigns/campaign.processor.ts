@@ -86,7 +86,11 @@ export class CampaignProcessor extends WorkerHost {
             if (targetPhones && targetPhones.length > 0) {
                 const normalizedTargetPhones = targetPhones.map(p => normalizePhone(p) || p);
                 const contacts = await this.prisma.contact.findMany({
-                    where: { shopId: campaign.shopId }
+                    where: {
+                        shopId: campaign.shopId,
+                        phone: { in: normalizedTargetPhones }
+                    },
+                    select: { id: true, name: true, phone: true, tags: true }
                 });
                 const contactMap = new Map<string, any>();
                 for (const c of contacts) {
@@ -133,12 +137,30 @@ export class CampaignProcessor extends WorkerHost {
                 });
             } else {
                 const baseWhere: any = { shopId: campaign.shopId };
+                if (targetFilters?.city) {
+                    baseWhere.city = { equals: targetFilters.city, mode: 'insensitive' };
+                }
+
+                const includeConversations = Boolean(targetFilters?.noMessagesInDays);
                 const contacts = await this.prisma.contact.findMany({
                     where: baseWhere,
-                    include: { conversations: true }
+                    select: {
+                        id: true,
+                        name: true,
+                        phone: true,
+                        tags: true,
+                        city: true,
+                        ...(includeConversations ? {
+                            conversations: {
+                                take: 1,
+                                orderBy: { lastMessageAt: 'desc' },
+                                select: { lastMessageAt: true }
+                            }
+                        } : {})
+                    }
                 });
 
-                let filtered = contacts;
+                let filtered = contacts as any[];
                 if (targetTags && targetTags.length > 0) {
                     filtered = filtered.filter(c => {
                         const tags = (c.tags as string[]) || [];
@@ -243,36 +265,36 @@ export class CampaignProcessor extends WorkerHost {
                 chunkSize = 5;
             }
 
-            for (let i = 0; i < pendingBatch.length; i += chunkSize) {
-                const chunk = pendingBatch.slice(i, i + chunkSize);
-
-                // Race-condition guard: re-validate consent + contact existence right before
-                // sending so an opt-out (or deletion) mid-campaign never sends a pending
-                // marketing message.
-                const chunkContactIds = Array.from(new Set(chunk.map(item => item.contactId).filter(Boolean)));
-                const [consentRows, existingContacts] = await Promise.all([
+            // Pre-fetch consent + contact data ONCE for the entire 100-item batch instead of querying per chunk
+            const batchContactIds = Array.from(new Set(pendingBatch.map(item => item.contactId).filter(Boolean))) as string[];
+            const [batchConsentRows, batchExistingContacts] = batchContactIds.length > 0
+                ? await Promise.all([
                     this.prisma.contactMarketingConsent.findMany({
-                        where: { shopId: campaign.shopId, contactId: { in: chunkContactIds as string[] } },
+                        where: { shopId: campaign.shopId, contactId: { in: batchContactIds } },
                         select: { contactId: true, status: true },
                     }),
                     this.prisma.contact.findMany({
-                        where: { shopId: campaign.shopId, id: { in: chunkContactIds as string[] } },
+                        where: { shopId: campaign.shopId, id: { in: batchContactIds } },
                         select: { id: true, tags: true },
                     }),
-                ]);
-                const chunkConsentMap = new Map(consentRows.map(r => [r.contactId, r.status]));
-                const contactMapById = new Map(existingContacts.map(c => [c.id, c]));
+                ])
+                : [[], []];
+            const batchConsentMap = new Map(batchConsentRows.map(r => [r.contactId, r.status]));
+            const batchContactMapById = new Map(batchExistingContacts.map(c => [c.id, c]));
+
+            for (let i = 0; i < pendingBatch.length; i += chunkSize) {
+                const chunk = pendingBatch.slice(i, i + chunkSize);
 
                 const skipEntries: { id: string; reason: string }[] = [];
                 const sendableChunk = chunk.filter(item => {
                     let skip = false;
                     let skipReason = 'contact_opted_out';
                     if (item.contactId) {
-                        const contact = contactMapById.get(item.contactId);
+                        const contact = batchContactMapById.get(item.contactId);
                         if (!contact) {
                             skip = true; // contact deleted while campaign running
                             skipReason = 'contact_deleted';
-                        } else if (!isConsentAllowed(chunkConsentMap.get(item.contactId), marketingMode)) {
+                        } else if (!isConsentAllowed(batchConsentMap.get(item.contactId), marketingMode)) {
                             skip = true; // opted out after the campaign started
                             skipReason = 'contact_opted_out';
                         } else if (excludeTagsSet.size > 0 && Array.isArray(contact.tags)) {
@@ -293,10 +315,15 @@ export class CampaignProcessor extends WorkerHost {
                 });
 
                 if (skipEntries.length > 0) {
+                    const reasonGroups = new Map<string, string[]>();
                     for (const entry of skipEntries) {
-                        await this.prisma.campaignContact.update({
-                            where: { id: entry.id },
-                            data: { status: 'aborted', failReason: entry.reason },
+                        if (!reasonGroups.has(entry.reason)) reasonGroups.set(entry.reason, []);
+                        reasonGroups.get(entry.reason)!.push(entry.id);
+                    }
+                    for (const [reason, ids] of reasonGroups.entries()) {
+                        await this.prisma.campaignContact.updateMany({
+                            where: { id: { in: ids } },
+                            data: { status: 'aborted', failReason: reason },
                         });
                     }
                 }

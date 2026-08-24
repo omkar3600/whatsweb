@@ -143,12 +143,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => window.removeEventListener('storage', handleStorageChange);
     }, [pathname]);
 
+    const lastVerifiedAtRef = React.useRef<number>(0);
+
     // Session validation without breaking user object reference equality on every click
+    // Throttled to at most once every 5 minutes or when on blocked page
     useEffect(() => {
         const publicPaths = ['/login', '/demo', '/', '/privacy-policy', '/terms-of-service'];
         const storedUser = localStorage.getItem('user');
         const token = localStorage.getItem('access_token');
         if (!storedUser || !token || publicPaths.includes(pathname)) return;
+
+        const isBlockedPage = pathname.startsWith('/blocked');
+        const now = Date.now();
+        // Skip network call if verified within the last 5 minutes (unless on blocked page)
+        if (!isBlockedPage && lastVerifiedAtRef.current && (now - lastVerifiedAtRef.current < 5 * 60 * 1000)) {
+            return;
+        }
 
         try {
             const parsedUser = JSON.parse(storedUser);
@@ -156,6 +166,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (role === 'admin') return;
 
             api.get('/users/me').then(res => {
+                lastVerifiedAtRef.current = Date.now();
                 const shop = res.data?.shop;
                 if (shop) {
                     if (shop.status !== 'active') {

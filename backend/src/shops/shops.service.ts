@@ -53,20 +53,20 @@ export class ShopsService {
             select: { id: true, name: true, status: true, stats: true, createdAt: true }
         });
 
-        // Global Campaign Funnel
-        let globalSent = 0, globalDelivered = 0, globalRead = 0, globalFailed = 0;
-        const allCampaignContacts = await this.prisma.campaignContact.findMany({
+        // Global Campaign Funnel (Aggregated via groupBy)
+        const statusGroups = await this.prisma.campaignContact.groupBy({
+            by: ['status'],
             where: { campaign: { shopId } },
-            select: { status: true }
+            _count: { status: true },
         });
-        
-        for (const c of allCampaignContacts) {
-            const s = c.status;
-            if (['sent', 'delivered', 'read', 'replied', 'clicked'].includes(s)) globalSent++;
-            if (['delivered', 'read', 'replied', 'clicked'].includes(s)) globalDelivered++;
-            if (['read', 'replied', 'clicked'].includes(s)) globalRead++;
-            if (s === 'failed') globalFailed++;
+        const countMap: Record<string, number> = {};
+        for (const g of statusGroups) {
+            countMap[g.status] = g._count.status;
         }
+        const globalSent = (countMap['sent'] || 0) + (countMap['delivered'] || 0) + (countMap['read'] || 0) + (countMap['replied'] || 0) + (countMap['clicked'] || 0);
+        const globalDelivered = (countMap['delivered'] || 0) + (countMap['read'] || 0) + (countMap['replied'] || 0) + (countMap['clicked'] || 0);
+        const globalRead = (countMap['read'] || 0) + (countMap['replied'] || 0) + (countMap['clicked'] || 0);
+        const globalFailed = countMap['failed'] || 0;
 
         // Message Volume Chart (Last 7 Days)
         const sevenDaysAgo = new Date();

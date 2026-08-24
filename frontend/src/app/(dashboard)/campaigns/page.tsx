@@ -133,10 +133,17 @@ export default function CampaignsPage() {
     const templates = (Array.isArray(fetchedTemplates) ? fetchedTemplates : (Array.isArray(fetchedTemplates?.data) ? fetchedTemplates.data : [])).filter((t: any) => t.status === 'approved' || true);
 
 
-    // We still fetch all contacts here for the audience builder. For a full fix, this needs server-side integration.
-    const { data: fetchedAllContacts } = useSWR('/contacts');
-    const allContacts = Array.isArray(fetchedAllContacts) ? fetchedAllContacts : (Array.isArray(fetchedAllContacts?.data) ? fetchedAllContacts.data : []);
+    // Create Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
+    const [step2Tab, setStep2Tab] = useState<'core' | 'advanced'>('core');
+    const [isSaving, setIsSaving] = useState(false);
+    const [sendNow, setSendNow] = useState(true);
+    const [newCampaign, setNewCampaign] = useState({ scheduledAt: format(new Date(Date.now() + 5 * 60 * 1000), "yyyy-MM-dd'T'HH:mm") });
 
+    // Only fetch contacts when the audience builder modal is open
+    const { data: fetchedAllContacts } = useSWR(isModalOpen ? '/contacts' : null);
+    const allContacts = Array.isArray(fetchedAllContacts) ? fetchedAllContacts : (Array.isArray(fetchedAllContacts?.data) ? fetchedAllContacts.data : []);
 
     const { data: fetchedContactTags } = useSWR('/contacts/tags');
 
@@ -145,14 +152,6 @@ export default function CampaignsPage() {
     const [statusFilter, setStatusFilter] = useState<'all' | 'processing' | 'completed' | 'scheduled' | 'aborted' | 'archived'>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-
-    // Create Modal state
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
-    const [step2Tab, setStep2Tab] = useState<'core' | 'advanced'>('core');
-    const [isSaving, setIsSaving] = useState(false);
-    const [sendNow, setSendNow] = useState(true);
-    const [newCampaign, setNewCampaign] = useState({ scheduledAt: format(new Date(Date.now() + 5 * 60 * 1000), "yyyy-MM-dd'T'HH:mm") });
 
     const createForm = useForm<z.infer<typeof campaignSchema>>({
         resolver: zodResolver(campaignSchema),
@@ -344,43 +343,45 @@ export default function CampaignsPage() {
             const aggregated: { phone: string; name: string; campaignId: string; campaignName: string; failReason?: string }[] = [];
             const phoneMap = new Map<string, any>();
 
-            for (const camp of targetCamps) {
-                try {
-                    const res = await api.get(`/campaigns/${camp.id}/analytics`);
-                    const fcList = res.data?.contacts?.failed || [];
-                    if (Array.isArray(fcList) && fcList.length > 0) {
-                        for (const fc of fcList) {
-                            if (fc.phone && !phoneMap.has(fc.phone)) {
-                                const item = {
-                                    phone: fc.phone,
-                                    name: fc.name || fc.phone,
-                                    campaignId: camp.id,
-                                    campaignName: camp.name,
-                                    failReason: fc.failReason || 'Failed to deliver',
-                                };
-                                phoneMap.set(fc.phone, item);
-                                aggregated.push(item);
+            await Promise.all(
+                targetCamps.map(async (camp) => {
+                    try {
+                        const res = await api.get(`/campaigns/${camp.id}/analytics`);
+                        const fcList = res.data?.contacts?.failed || [];
+                        if (Array.isArray(fcList) && fcList.length > 0) {
+                            for (const fc of fcList) {
+                                if (fc.phone && !phoneMap.has(fc.phone)) {
+                                    const item = {
+                                        phone: fc.phone,
+                                        name: fc.name || fc.phone,
+                                        campaignId: camp.id,
+                                        campaignName: camp.name,
+                                        failReason: fc.failReason || 'Failed to deliver',
+                                    };
+                                    phoneMap.set(fc.phone, item);
+                                    aggregated.push(item);
+                                }
+                            }
+                        } else if (camp.targetPhones && Array.isArray(camp.targetPhones)) {
+                            for (const phone of camp.targetPhones) {
+                                if (!phoneMap.has(phone)) {
+                                    const item = {
+                                        phone,
+                                        name: phone,
+                                        campaignId: camp.id,
+                                        campaignName: camp.name,
+                                        failReason: 'Broadcast Failure',
+                                    };
+                                    phoneMap.set(phone, item);
+                                    aggregated.push(item);
+                                }
                             }
                         }
-                    } else if (camp.targetPhones && Array.isArray(camp.targetPhones)) {
-                        for (const phone of camp.targetPhones) {
-                            if (!phoneMap.has(phone)) {
-                                const item = {
-                                    phone,
-                                    name: phone,
-                                    campaignId: camp.id,
-                                    campaignName: camp.name,
-                                    failReason: 'Broadcast Failure',
-                                };
-                                phoneMap.set(phone, item);
-                                aggregated.push(item);
-                            }
-                        }
+                    } catch (e) {
+                        console.error(`Error loading analytics for campaign ${camp.id}`, e);
                     }
-                } catch (e) {
-                    console.error(`Error loading analytics for campaign ${camp.id}`, e);
-                }
-            }
+                })
+            );
 
             setFailedContactsList(aggregated);
             setCreationSelectedPhones(aggregated.map(a => a.phone));

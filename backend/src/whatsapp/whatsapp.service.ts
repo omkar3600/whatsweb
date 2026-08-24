@@ -29,6 +29,8 @@ export class WhatsappService {
     // NOTE: graphApiBase is now dynamic — use getGraphApiBase() instead of this field
     // for calls that should respect runtime META_API_VERSION changes.
     private readonly graphApiBase = `https://graph.facebook.com/${process.env.META_API_VERSION || 'v18.0'}`;
+    private credentialsCache = new Map<string, { creds: WhatsAppCredentials; expiresAt: number }>();
+    private automationsCache = new Map<string, { automations: any[]; expiresAt: number }>();
 
     constructor(
         private prisma: PrismaService,
@@ -46,6 +48,24 @@ export class WhatsappService {
         private consentService: ConsentService,
     ) { }
 
+    /** Invalidate cached credentials when credentials are updated */
+    clearCredentialsCache(shopId?: string) {
+        if (shopId) {
+            this.credentialsCache.delete(shopId);
+        } else {
+            this.credentialsCache.clear();
+        }
+    }
+
+    /** Invalidate cached automations */
+    clearAutomationsCache(shopId?: string) {
+        if (shopId) {
+            this.automationsCache.delete(shopId);
+        } else {
+            this.automationsCache.clear();
+        }
+    }
+
     /** Returns the Graph API base URL, respecting DB override of META_API_VERSION. */
     private async getGraphApiBase(): Promise<string> {
         const version = await this.systemConfigService.get('META_API_VERSION', process.env.META_API_VERSION || 'v18.0');
@@ -53,11 +73,16 @@ export class WhatsappService {
     }
 
     /**
-     * Get decrypted credentials for a shop.
+     * Get decrypted credentials for a shop (cached for 2 minutes).
      * Tries the new WhatsAppBusinessAccount model first,
      * falls back to legacy WhatsAppCredential-style env vars for backward compat.
      */
     async getCredentials(shopId: string): Promise<WhatsAppCredentials> {
+        const cached = this.credentialsCache.get(shopId);
+        if (cached && cached.expiresAt > Date.now()) {
+            return cached.creds;
+        }
+
         // Try new multi-tenant model first
         const account = await this.prisma.whatsAppBusinessAccount.findFirst({
             where: { shopId, status: 'active' },
@@ -79,22 +104,26 @@ export class WhatsappService {
                 if (!anyPhone) {
                     throw new Error(`No active phone numbers found for shop ${shopId}`);
                 }
-                return {
+                const creds: WhatsAppCredentials = {
                     shopId,
                     phoneNumberId: anyPhone.phoneNumberId,
                     accessToken: this.cryptoService.decrypt(account.accessToken),
                     businessAccountId: account.businessAccountId,
                     wabaId: account.wabaId || account.businessAccountId,
                 };
+                this.credentialsCache.set(shopId, { creds, expiresAt: Date.now() + 2 * 60 * 1000 });
+                return creds;
             }
 
-            return {
+            const creds: WhatsAppCredentials = {
                 shopId,
                 phoneNumberId: defaultPhone.phoneNumberId,
                 accessToken: this.cryptoService.decrypt(account.accessToken),
                 businessAccountId: account.businessAccountId,
                 wabaId: account.wabaId || account.businessAccountId,
             };
+            this.credentialsCache.set(shopId, { creds, expiresAt: Date.now() + 2 * 60 * 1000 });
+            return creds;
         }
 
         throw new Error(`WhatsApp credentials not found for shop ${shopId}`);
@@ -378,20 +407,26 @@ export class WhatsappService {
                         }
 
                         // Sync Campaign.stats JSON so DB queries (such as Dashboard Overview) stay up-to-date
-                        const campaignContacts = await this.prisma.campaignContact.findMany({
+                        // Efficient GROUP BY aggregation instead of full-table scan
+                        const statusGroups = await this.prisma.campaignContact.groupBy({
+                            by: ['status'],
                             where: { campaignId: existing.campaignId },
-                            select: { status: true }
+                            _count: { status: true },
                         });
-                        let sent = 0, delivered = 0, read = 0, clicked = 0, replied = 0, failed = 0, pending = 0;
-                        for (const c of campaignContacts) {
-                            if (['sent', 'delivered', 'read', 'replied', 'clicked'].includes(c.status)) sent++;
-                            if (['delivered', 'read', 'replied', 'clicked'].includes(c.status)) delivered++;
-                            if (['read', 'replied', 'clicked'].includes(c.status)) read++;
-                            if (c.status === 'replied') replied++;
-                            if (c.status === 'clicked') clicked++;
-                            if (c.status === 'failed') failed++;
-                            if (c.status === 'pending') pending++;
+                        const countMap: Record<string, number> = {};
+                        let totalCount = 0;
+                        for (const g of statusGroups) {
+                            countMap[g.status] = g._count.status;
+                            totalCount += g._count.status;
                         }
+                        const sent = (countMap['sent'] || 0) + (countMap['delivered'] || 0) + (countMap['read'] || 0) + (countMap['replied'] || 0) + (countMap['clicked'] || 0);
+                        const delivered = (countMap['delivered'] || 0) + (countMap['read'] || 0) + (countMap['replied'] || 0) + (countMap['clicked'] || 0);
+                        const read = (countMap['read'] || 0) + (countMap['replied'] || 0) + (countMap['clicked'] || 0);
+                        const replied = countMap['replied'] || 0;
+                        const clicked = countMap['clicked'] || 0;
+                        const failed = countMap['failed'] || 0;
+                        const pending = countMap['pending'] || 0;
+
                         const camp = await this.prisma.campaign.findUnique({
                             where: { id: existing.campaignId },
                             select: { stats: true }
@@ -402,7 +437,7 @@ export class WhatsappService {
                             data: {
                                 stats: {
                                     ...currentMeta,
-                                    total: campaignContacts.length,
+                                    total: totalCount,
                                     pending,
                                     sent,
                                     delivered,
@@ -682,9 +717,13 @@ export class WhatsappService {
                 this.logger.warn(`Failed to update campaign tracking for ${contact.phone}: ${err}`);
             }
 
-            const automations = await this.prisma.automation.findMany({
-                where: { shopId, isActive: true }
-            });
+            let automations = this.automationsCache.get(shopId)?.automations;
+            if (!automations || this.automationsCache.get(shopId)!.expiresAt <= Date.now()) {
+                automations = await this.prisma.automation.findMany({
+                    where: { shopId, isActive: true }
+                });
+                this.automationsCache.set(shopId, { automations, expiresAt: Date.now() + 60 * 1000 });
+            }
             this.logger.log(`[Automation] ${automations.length} active automation(s). Incoming: "${incomingText}"`);
 
             for (const auto of automations) {

@@ -7,6 +7,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export class IncomingMessageTrigger implements ITriggerExecutor {
   type = 'incomingMessage';
   private readonly logger = new Logger(IncomingMessageTrigger.name);
+  private workflowCache = new Map<string, { workflows: any[]; expiresAt: number }>();
 
   constructor(
     private readonly engine: WorkflowEngineService,
@@ -16,11 +17,15 @@ export class IncomingMessageTrigger implements ITriggerExecutor {
   async evaluate(payload: any): Promise<void> {
     const { shopId, contactId, messageText, messageType } = payload;
     
-    // Find all published workflows that have an incoming message trigger
-    const workflows = await this.prisma.workflow.findMany({
-      where: { shopId, status: 'published' },
-      include: { versions: { where: { status: 'published' }, take: 1, orderBy: { versionNumber: 'desc' } } }
-    });
+    // Find all published workflows that have an incoming message trigger (cached for 30s)
+    let workflows = this.workflowCache.get(shopId)?.workflows;
+    if (!workflows || this.workflowCache.get(shopId)!.expiresAt <= Date.now()) {
+      workflows = await this.prisma.workflow.findMany({
+        where: { shopId, status: 'published' },
+        include: { versions: { where: { status: 'published' }, take: 1, orderBy: { versionNumber: 'desc' } } }
+      });
+      this.workflowCache.set(shopId, { workflows, expiresAt: Date.now() + 30 * 1000 });
+    }
 
     for (const workflow of workflows) {
       if (!workflow.versions.length) continue;
