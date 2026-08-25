@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { extractContactTags } from '../consent/consent-audience';
 import * as XLSX from 'xlsx';
 
 @Injectable()
@@ -306,12 +307,11 @@ export class ContactsService {
                 };
             }
 
-            const limitNumber = limit ? parseInt(limit as string, 10) : 5000;
             const contacts = await this.prisma.contact.findMany({
                 where,
                 include,
                 orderBy,
-                take: Math.min(limitNumber, 50000),
+                ...(limit ? { take: parseInt(limit as string, 10) } : {}),
             });
             return contacts.map(mapContact);
         } catch (err: any) {
@@ -484,40 +484,42 @@ export class ContactsService {
                 ORDER BY count DESC
             `;
 
-            const data = (rawResult || []).map(r => ({
-                tag: String(r.tag).trim(),
-                count: Number(r.count || 0)
-            })).filter(t => t.tag.length > 0);
+            if (rawResult && rawResult.length > 0) {
+                const data = rawResult.map(r => ({
+                    tag: String(r.tag).trim(),
+                    count: Number(r.count || 0)
+                })).filter(t => t.tag.length > 0);
 
-            this.tagCountCache.set(shopId, { data, expiresAt: Date.now() + 30 * 1000 });
-            return data;
+                this.tagCountCache.set(shopId, { data, expiresAt: Date.now() + 30 * 1000 });
+                return data;
+            }
         } catch (err: any) {
-            this.logger.warn(`[getContactTagsWithCount] Raw SQL failed, falling back to Prisma: ${err?.message}`);
-            const contacts = await this.prisma.contact.findMany({
-                where: { shopId },
-                select: { tags: true },
-                take: 5000,
-            });
+            this.logger.warn(`[getContactTagsWithCount] Raw SQL unnest failed: ${err?.message}`);
+        }
 
-            const tagMap: Record<string, number> = {};
-            for (const c of contacts) {
-                if (Array.isArray(c.tags)) {
-                    for (const t of c.tags) {
-                        if (typeof t === 'string' && t.trim()) {
-                            const tagStr = t.trim();
-                            tagMap[tagStr] = (tagMap[tagStr] || 0) + 1;
-                        }
-                    }
+        // Full Prisma scan without ANY limit
+        const contacts = await this.prisma.contact.findMany({
+            where: { shopId },
+            select: { tags: true },
+        });
+
+        const tagMap: Record<string, number> = {};
+        for (const c of contacts) {
+            const tags = extractContactTags(c.tags);
+            for (const t of tags) {
+                const tagStr = t.trim();
+                if (tagStr) {
+                    tagMap[tagStr] = (tagMap[tagStr] || 0) + 1;
                 }
             }
-
-            const data = Object.entries(tagMap)
-                .map(([tag, count]) => ({ tag, count }))
-                .sort((a, b) => b.count - a.count);
-
-            this.tagCountCache.set(shopId, { data, expiresAt: Date.now() + 30 * 1000 });
-            return data;
         }
+
+        const data = Object.entries(tagMap)
+            .map(([tag, count]) => ({ tag, count }))
+            .sort((a, b) => b.count - a.count);
+
+        this.tagCountCache.set(shopId, { data, expiresAt: Date.now() + 30 * 1000 });
+        return data;
     }
 
     async addTagsBulk(shopId: string, body: { contactIds?: string[]; phones?: string[]; tags: string[] }) {

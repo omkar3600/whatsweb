@@ -290,13 +290,18 @@ export class ConsentService {
     // ------------------------------------------------------------------
 
     /** Map of contactId → consent status for a set of contacts (missing = no row). */
-    async getConsentStatusMap(shopId: string, contactIds: string[]): Promise<Map<string, string>> {
+    async getConsentStatusMap(shopId: string, contactIds?: string[]): Promise<Map<string, string>> {
         const map = new Map<string, string>();
-        const ids = Array.from(new Set((contactIds || []).filter(Boolean)));
-        if (ids.length === 0) return map;
+        if (!shopId) return map;
+
+        const ids = Array.isArray(contactIds) ? Array.from(new Set(contactIds.filter(Boolean))) : [];
+        const where: any = { shopId };
+        if (ids.length > 0 && ids.length <= 5000) {
+            where.contactId = { in: ids };
+        }
 
         const consents = await this.prisma.contactMarketingConsent.findMany({
-            where: { shopId, contactId: { in: ids } },
+            where,
             select: { contactId: true, status: true },
         });
         for (const c of consents) map.set(c.contactId, c.status);

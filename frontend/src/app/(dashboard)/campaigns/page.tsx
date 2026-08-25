@@ -354,7 +354,16 @@ export default function CampaignsPage() {
         } else {
             base = list;
         }
-        const baseCount = targetType === 'all' && totalShopContacts > 0 ? totalShopContacts : base.length;
+
+        const optimisticTagSum = selectedTagList.length > 0
+            ? availableTags
+                .filter(t => selectedTagList.some(st => st.toLowerCase() === t.tag.toLowerCase()))
+                .reduce((acc, curr) => acc + (curr.count || 0), 0)
+            : 0;
+
+        const baseCount = targetType === 'all'
+            ? (totalShopContacts > 0 ? totalShopContacts : base.length)
+            : (targetType === 'tags' ? (optimisticTagSum > 0 ? optimisticTagSum : base.length) : base.length);
 
         // 2. Exclusions (Exclude Tags)
         let afterExclusions = base;
