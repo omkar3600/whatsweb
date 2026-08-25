@@ -75,4 +75,65 @@ describe('consent audience evaluation', () => {
         expect(result.breakdown.tagMismatch).toBe(1);
         expect(result.breakdown.filterMismatch).toBe(1);
     });
+
+    it('handles case-insensitive and trimmed tags in various formats', () => {
+        const result = evaluateAudience([
+            { id: '1', tags: ['VIP', ' loyal '] },
+            { id: '2', tags: '["vip", "customer"]' },
+            { id: '3', tags: 'VIP, new' },
+            { id: '4', tags: ['other'] },
+        ], new Map(), {
+            targetTags: ['vip'],
+        });
+
+        expect(result.total).toBe(4);
+        expect(result.baseCount).toBe(3);
+        expect(result.eligible).toBe(3);
+        expect(result.breakdown.tagMismatch).toBe(1);
+    });
+
+    it('enforces AND logic for must-have tags (targetFilters.hasTags)', () => {
+        const result = evaluateAudience([
+            { id: '1', tags: ['vip', 'buyer', 'pune'] },
+            { id: '2', tags: ['vip'] }, // missing 'buyer'
+            { id: '3', tags: ['buyer'] }, // missing 'vip'
+        ], new Map(), {
+            targetFilters: { hasTags: ['vip', 'buyer'] },
+        });
+
+        expect(result.total).toBe(3);
+        expect(result.eligible).toBe(1);
+        expect(result.breakdown.filterMismatch).toBe(2);
+    });
+
+    it('matches target phones regardless of leading plus or spaces', () => {
+        const result = evaluateAudience([
+            { id: '1', phone: '+919876543210', tags: [] },
+            { id: '2', phone: '919876543210', tags: [] },
+            { id: '3', phone: '919111111111', tags: [] },
+        ], new Map(), {
+            targetPhones: ['919876543210'],
+        });
+
+        expect(result.total).toBe(3);
+        expect(result.eligible).toBe(2);
+        expect(result.breakdown.phoneMismatch).toBe(1);
+    });
+
+    it('correctly excludes contacts with excludeTags case-insensitively', () => {
+        const result = evaluateAudience([
+            { id: '1', tags: ['VIP', 'DoNotContact'] },
+            { id: '2', tags: ['vip', 'active'] },
+        ], new Map(), {
+            targetTags: ['vip'],
+            excludeTags: ['donotcontact'],
+        });
+
+        expect(result.total).toBe(2);
+        expect(result.baseCount).toBe(2);
+        expect(result.exclusionsCount).toBe(1);
+        expect(result.eligible).toBe(1);
+        expect(result.breakdown.excludeTags).toBe(1);
+    });
 });
+

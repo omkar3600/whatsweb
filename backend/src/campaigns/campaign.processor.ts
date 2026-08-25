@@ -3,7 +3,13 @@ import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { ConsentService } from '../consent/consent.service';
-import { isConsentAllowed, resolveMarketingMode, MarketingConsentMode } from '../consent/consent-audience';
+import {
+    isConsentAllowed,
+    resolveMarketingMode,
+    MarketingConsentMode,
+    extractContactTags,
+    matchesTargetFilters,
+} from '../consent/consent-audience';
 import { normalizePhone } from '../common/utils/phone-normalizer';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -69,10 +75,11 @@ export class CampaignProcessor extends WorkerHost {
         const audienceFilters = campaign.audienceFilters as any;
         const marketingMode: MarketingConsentMode = resolveMarketingMode(audienceFilters);
 
-        const rawExcludeTags: string[] = []
-            .concat(Array.isArray(campaignMeta.excludeTags) ? campaignMeta.excludeTags : [])
-            .concat(Array.isArray(audienceFilters?.excludeTags) ? audienceFilters.excludeTags : [])
-            .concat(Array.isArray((campaign.targetFilters as any)?.excludeTags) ? (campaign.targetFilters as any).excludeTags : []);
+        const rawExcludeTags: string[] = [
+            ...(Array.isArray(campaignMeta.excludeTags) ? campaignMeta.excludeTags : []),
+            ...(Array.isArray(audienceFilters?.excludeTags) ? audienceFilters.excludeTags : []),
+            ...(Array.isArray((campaign.targetFilters as any)?.excludeTags) ? (campaign.targetFilters as any).excludeTags : []),
+        ].map((t: string) => String(t).trim()).filter(Boolean);
         const excludeTagsSet = new Set(rawExcludeTags.map((t: string) => String(t).toLowerCase().trim()).filter(Boolean));
 
         const failureHistory: { phone: string; name: string; reason: string; timestamp: Date }[] = [];
@@ -84,25 +91,40 @@ export class CampaignProcessor extends WorkerHost {
             let targetList: { phone: string; name: string; contactId?: string | null }[] = [];
 
             if (targetPhones && targetPhones.length > 0) {
-                const normalizedTargetPhones = targetPhones.map(p => normalizePhone(p) || p);
+                const rawPhones = targetPhones.map(p => String(p).trim()).filter(Boolean);
+                const normalizedTargetPhones = rawPhones.map(p => normalizePhone(p)).filter(Boolean);
+                const allQueryPhones = Array.from(new Set([
+                    ...rawPhones,
+                    ...normalizedTargetPhones,
+                    ...normalizedTargetPhones.map(p => `+${p}`)
+                ]));
+
                 const contacts = await this.prisma.contact.findMany({
                     where: {
                         shopId: campaign.shopId,
-                        phone: { in: normalizedTargetPhones }
+                        phone: { in: allQueryPhones }
                     },
                     select: { id: true, name: true, phone: true, tags: true }
                 });
                 const contactMap = new Map<string, any>();
                 for (const c of contacts) {
-                    const normKey = normalizePhone(c.phone) || c.phone;
-                    contactMap.set(normKey, c);
+                    const cPhone = String(c.phone || '').trim();
+                    const normKey = normalizePhone(cPhone);
+                    if (cPhone) contactMap.set(cPhone.toLowerCase(), c);
+                    if (normKey) {
+                        contactMap.set(normKey, c);
+                        contactMap.set(`+${normKey}`, c);
+                    }
                 }
 
                 const seenPhones = new Set<string>();
-                for (const phone of normalizedTargetPhones) {
-                    if (seenPhones.has(phone)) continue;
-                    seenPhones.add(phone);
-                    const matched = contactMap.get(phone);
+                for (const phone of rawPhones) {
+                    const norm = normalizePhone(phone);
+                    const dedupeKey = norm || phone;
+                    if (seenPhones.has(dedupeKey)) continue;
+                    seenPhones.add(dedupeKey);
+
+                    const matched = contactMap.get(phone.toLowerCase()) || (norm ? contactMap.get(norm) : null);
                     targetList.push({
                         phone,
                         name: matched?.name || phone,
@@ -113,11 +135,11 @@ export class CampaignProcessor extends WorkerHost {
                 // Apply excludeTags filtering if target contacts have excluded tags
                 if (excludeTagsSet.size > 0) {
                     targetList = targetList.filter(t => {
-                        const matched = contactMap.get(t.phone);
-                        if (!matched || !Array.isArray(matched.tags)) return true;
-                        const hasExcludedTag = matched.tags.some((tag: any) =>
-                            typeof tag === 'string' && excludeTagsSet.has(tag.toLowerCase().trim())
-                        );
+                        const norm = normalizePhone(t.phone);
+                        const matched = contactMap.get(t.phone.toLowerCase()) || (norm ? contactMap.get(norm) : null);
+                        if (!matched) return true;
+                        const contactTags = extractContactTags(matched.tags).map(tg => tg.toLowerCase());
+                        const hasExcludedTag = contactTags.some((tag: string) => excludeTagsSet.has(tag));
                         return !hasExcludedTag;
                     });
                 }
@@ -137,8 +159,8 @@ export class CampaignProcessor extends WorkerHost {
                 });
             } else {
                 const baseWhere: any = { shopId: campaign.shopId };
-                if (targetFilters?.city) {
-                    baseWhere.city = { equals: targetFilters.city, mode: 'insensitive' };
+                if (targetFilters?.city && typeof targetFilters.city === 'string' && targetFilters.city.trim()) {
+                    baseWhere.city = { equals: targetFilters.city.trim(), mode: 'insensitive' };
                 }
 
                 const includeConversations = Boolean(targetFilters?.noMessagesInDays);
@@ -162,43 +184,30 @@ export class CampaignProcessor extends WorkerHost {
 
                 let filtered = contacts as any[];
                 if (targetTags && targetTags.length > 0) {
+                    const targetTagSet = new Set(targetTags.map(t => String(t).trim().toLowerCase()).filter(Boolean));
                     filtered = filtered.filter(c => {
-                        const tags = (c.tags as string[]) || [];
-                        return targetTags.some(t => tags.includes(t));
+                        const tags = extractContactTags(c.tags).map(t => t.toLowerCase());
+                        return tags.some(t => targetTagSet.has(t));
                     });
                 }
+
                 if (targetFilters) {
-                    filtered = filtered.filter(c => {
-                        if (targetFilters.city && (!c.city || c.city.toLowerCase().trim() !== targetFilters.city.toLowerCase().trim())) return false;
-                        if (targetFilters.hasTags && targetFilters.hasTags.length > 0) {
-                            const tags = (c.tags as string[]) || [];
-                            if (!targetFilters.hasTags.some((t: string) => tags.includes(t))) return false;
-                        }
-                        if (targetFilters.noMessagesInDays) {
-                            const convo = c.conversations?.[0];
-                            if (convo && convo.lastMessageAt) {
-                                const days = (Date.now() - new Date(convo.lastMessageAt).getTime()) / (86400 * 1000);
-                                if (days < targetFilters.noMessagesInDays) return false;
-                            }
-                        }
-                        return true;
-                    });
+                    filtered = filtered.filter(c => matchesTargetFilters(c, targetFilters));
                 }
+
                 if (excludeUnsubscribed) {
                     filtered = filtered.filter(c => {
-                        const tags = (c.tags as string[]) || [];
-                        return !tags.includes('unsubscribed');
+                        const tags = extractContactTags(c.tags).map(t => t.toLowerCase());
+                        return !tags.includes('unsubscribed') && !tags.includes('optout') && !tags.includes('opt-out') && !tags.includes('opted_out');
                     });
                 }
 
                 // Exclude tags filtering (case-insensitive)
                 if (excludeTagsSet.size > 0) {
                     filtered = filtered.filter(c => {
-                        const tags = (c.tags as string[]) || [];
-                        if (!Array.isArray(tags) || tags.length === 0) return true;
-                        const hasExcludedTag = tags.some((tag: any) =>
-                            typeof tag === 'string' && excludeTagsSet.has(tag.toLowerCase().trim())
-                        );
+                        const tags = extractContactTags(c.tags).map(t => t.toLowerCase());
+                        if (tags.length === 0) return true;
+                        const hasExcludedTag = tags.some((tag: string) => excludeTagsSet.has(tag));
                         return !hasExcludedTag;
                     });
                 }
@@ -209,8 +218,8 @@ export class CampaignProcessor extends WorkerHost {
                 const filteredContactIds = filtered.map(c => c.id);
                 const consentMap = await this.consentService.getConsentStatusMap(campaign.shopId, filteredContactIds);
                 filtered = filtered.filter(c => {
-                    const tags = (c.tags as string[]) || [];
-                    if (tags.includes('Invalid Number')) return false;
+                    const tags = extractContactTags(c.tags).map(t => t.toLowerCase());
+                    if (tags.includes('invalid number') || tags.includes('invalid') || tags.includes('invalid_number')) return false;
                     return isConsentAllowed(consentMap.get(c.id), marketingMode);
                 });
 

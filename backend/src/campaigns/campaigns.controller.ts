@@ -16,6 +16,11 @@ export class CampaignsController {
         return this.campaignsService.createCampaign(user.shopId, body);
     }
 
+    @Post('estimate-audience')
+    async estimateAudience(@GetUser() user: any, @Body() body: any) {
+        return this.campaignsService.estimateAudience(user.shopId, body);
+    }
+
     @Get()
     async getCampaigns(
         @GetUser() user: any,

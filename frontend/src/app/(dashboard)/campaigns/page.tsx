@@ -142,10 +142,12 @@ export default function CampaignsPage() {
     const [newCampaign, setNewCampaign] = useState({ scheduledAt: format(new Date(Date.now() + 5 * 60 * 1000), "yyyy-MM-dd'T'HH:mm") });
 
     // Only fetch contacts when the audience builder modal is open
-    const { data: fetchedAllContacts } = useSWR(isModalOpen ? '/contacts' : null);
+    const { data: fetchedAllContacts } = useSWR(isModalOpen ? '/contacts?limit=500' : null);
     const allContacts = Array.isArray(fetchedAllContacts) ? fetchedAllContacts : (Array.isArray(fetchedAllContacts?.data) ? fetchedAllContacts.data : []);
 
     const { data: fetchedContactTags } = useSWR('/contacts/tags');
+    const { data: fetchedContactStats } = useSWR(isModalOpen ? '/contacts/stats' : null);
+    const totalShopContacts = fetchedContactStats?.total || allContacts.length || 0;
 
     // Filter, search & view states (CARDS AS DEFAULT)
     const [searchQuery, setSearchQuery] = useState('');
@@ -174,6 +176,27 @@ export default function CampaignsPage() {
     const [failedContactSearch, setFailedContactSearch] = useState('');
     const [segmentFilters, setSegmentFilters] = useState({ city: '', hasTags: '', noMessagesInDays: '' });
     const [contactSearch, setContactSearch] = useState('');
+
+    // Dynamic search for specific contacts
+    const { data: searchedContactsData, isLoading: isSearchingContacts } = useSWR(
+        isModalOpen && targetType === 'contacts' && contactSearch.trim()
+            ? `/contacts?search=${encodeURIComponent(contactSearch.trim())}&limit=100`
+            : null
+    );
+    const searchedContactList = useMemo(() => {
+        const results = Array.isArray(searchedContactsData)
+            ? searchedContactsData
+            : (Array.isArray(searchedContactsData?.data) ? searchedContactsData.data : []);
+        const phoneSet = new Set(results.map((c: any) => c.phone));
+        // Also include loaded contacts that match search or are already selected
+        const additional = allContacts.filter((c: any) => {
+            if (phoneSet.has(c.phone)) return false;
+            if (creationSelectedPhones.includes(c.phone)) return true;
+            if (!contactSearch.trim()) return true;
+            return c.name?.toLowerCase().includes(contactSearch.toLowerCase()) || c.phone?.includes(contactSearch);
+        });
+        return [...results, ...additional];
+    }, [searchedContactsData, allContacts, creationSelectedPhones, contactSearch]);
 
     const availableTags = useMemo<{ tag: string; count: number }[]>(() => {
         if (Array.isArray(fetchedContactTags) && fetchedContactTags.length > 0) {
@@ -221,23 +244,6 @@ export default function CampaignsPage() {
         }
     };
 
-    const estimatedAudienceCount = useMemo(() => {
-        if (selectedTagList.length === 0) return 0;
-        const list = Array.isArray(allContacts) ? allContacts : (Array.isArray(allContacts?.data) ? allContacts.data : []);
-        if (list.length === 0) {
-            return availableTags
-                .filter(t => selectedTagList.includes(t.tag))
-                .reduce((sum, t) => sum + t.count, 0);
-        }
-        const setOfSelected = new Set(selectedTagList.map(t => t.toLowerCase()));
-        return list.filter((c: any) => {
-            if (Array.isArray(c.tags)) {
-                return c.tags.some((t: any) => typeof t === 'string' && setOfSelected.has(t.trim().toLowerCase()));
-            }
-            return false;
-        }).length;
-    }, [selectedTagList, allContacts, availableTags]);
-
     const [sendRate, setSendRate] = useState<'instant' | 'standard' | 'turbo'>('standard');
     const [excludeUnsubscribed, setExcludeUnsubscribed] = useState(true);
     // Marketing consent mode: OPTED_IN_ONLY, EXCLUDE_OPTED_OUT (default), ALL
@@ -260,8 +266,82 @@ export default function CampaignsPage() {
         setRequireTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
     };
 
+    // Live Server Audience Estimation (Calculated directly against the entire database)
+    const [serverAudienceMetrics, setServerAudienceMetrics] = useState<{
+        total: number;
+        baseCount: number;
+        exclusionsCount: number;
+        consentExcludedCount: number;
+        locationSegmentExcludedCount: number;
+        finalEligibleCount: number;
+        breakdown?: any;
+    } | null>(null);
+    const [isEstimatingAudience, setIsEstimatingAudience] = useState(false);
+
+    useEffect(() => {
+        if (!isModalOpen) return;
+        const timer = setTimeout(async () => {
+            setIsEstimatingAudience(true);
+            try {
+                const res = await api.post('/campaigns/estimate-audience', {
+                    targetType,
+                    targetTags: targetType === 'tags' ? selectedTagList : undefined,
+                    targetPhones: (targetType === 'contacts' || targetType === 'failed') ? creationSelectedPhones : undefined,
+                    targetFilters: (targetCity.trim() || requireTags.length > 0 || noMessagesInDays.trim() || excludeTags.length > 0) ? {
+                        city: targetCity.trim() || undefined,
+                        hasTags: requireTags.length > 0 ? requireTags : undefined,
+                        noMessagesInDays: noMessagesInDays.trim() ? parseInt(noMessagesInDays) : undefined,
+                        excludeTags: excludeTags.length > 0 ? excludeTags : undefined,
+                    } : undefined,
+                    audienceFilters: {
+                        marketingConsent: marketingConsentMode,
+                        excludeOptedOut: marketingConsentMode === 'EXCLUDE_OPTED_OUT',
+                        excludeInvalid: true,
+                        excludeTags: excludeTags.length > 0 ? excludeTags : undefined,
+                    },
+                    excludeUnsubscribed,
+                    excludeTags: excludeTags.length > 0 ? excludeTags : undefined,
+                });
+                if (res.data) {
+                    setServerAudienceMetrics(res.data);
+                }
+            } catch (e) {
+                console.error('Audience estimation failed', e);
+            } finally {
+                setIsEstimatingAudience(false);
+            }
+        }, 150);
+        return () => clearTimeout(timer);
+    }, [
+        isModalOpen,
+        targetType,
+        selectedTagList,
+        creationSelectedPhones,
+        targetCity,
+        requireTags,
+        noMessagesInDays,
+        marketingConsentMode,
+        excludeUnsubscribed,
+        excludeTags,
+    ]);
+
     // Detailed audience metrics to show exact counts for each filtering stage.
     const audienceMetrics = useMemo(() => {
+        if (serverAudienceMetrics) {
+            return {
+                baseCount: serverAudienceMetrics.baseCount ?? 0,
+                exclusionsCount: serverAudienceMetrics.exclusionsCount ?? 0,
+                optedOutCount: serverAudienceMetrics.breakdown?.optedOut ?? 0,
+                notOptedInCount: serverAudienceMetrics.breakdown?.notOptedIn ?? 0,
+                invalidCount: serverAudienceMetrics.breakdown?.invalid ?? 0,
+                unsubscribedCount: serverAudienceMetrics.breakdown?.unsubscribed ?? 0,
+                consentExcludedCount: serverAudienceMetrics.consentExcludedCount ?? 0,
+                validAfterConsent: (serverAudienceMetrics.baseCount ?? 0) - (serverAudienceMetrics.exclusionsCount ?? 0) - (serverAudienceMetrics.consentExcludedCount ?? 0),
+                locationSegmentExcludedCount: serverAudienceMetrics.locationSegmentExcludedCount ?? 0,
+                finalEligibleCount: serverAudienceMetrics.finalEligibleCount ?? serverAudienceMetrics.baseCount ?? 0,
+            };
+        }
+
         const list = Array.isArray(allContacts) ? allContacts : (Array.isArray(allContacts?.data) ? allContacts.data : []);
         
         // 1. Base Audience
@@ -274,7 +354,7 @@ export default function CampaignsPage() {
         } else {
             base = list;
         }
-        const baseCount = base.length;
+        const baseCount = targetType === 'all' && totalShopContacts > 0 ? totalShopContacts : base.length;
 
         // 2. Exclusions (Exclude Tags)
         let afterExclusions = base;
@@ -282,7 +362,7 @@ export default function CampaignsPage() {
             const excl = new Set(excludeTags.map(t => t.toLowerCase()));
             afterExclusions = afterExclusions.filter((c: any) => !Array.isArray(c.tags) || !c.tags.some((t: any) => typeof t === 'string' && excl.has(t.toLowerCase())));
         }
-        const exclusionsCount = baseCount - afterExclusions.length;
+        const exclusionsCount = Math.max(0, base.length - afterExclusions.length);
 
         // 3. Consent & Compliance
         let validAfterConsent = 0;
@@ -318,10 +398,10 @@ export default function CampaignsPage() {
         }
         
         const finalEligibleCount = finalArray.length;
-        const locationSegmentExcludedCount = validAfterConsent - finalEligibleCount;
+        const locationSegmentExcludedCount = Math.max(0, validAfterConsent - finalEligibleCount);
 
         return { baseCount, exclusionsCount, optedOutCount, notOptedInCount, invalidCount, unsubscribedCount, consentExcludedCount, validAfterConsent, locationSegmentExcludedCount, finalEligibleCount };
-    }, [allContacts, targetType, selectedTagList, creationSelectedPhones, targetCity, requireTags, excludeTags, marketingConsentMode, excludeUnsubscribed]);
+    }, [serverAudienceMetrics, allContacts, targetType, selectedTagList, creationSelectedPhones, targetCity, requireTags, excludeTags, marketingConsentMode, excludeUnsubscribed, totalShopContacts]);
 
     const loadFailedContactsForCategories = async (categoryIds: string[]) => {
         if (!categoryIds || categoryIds.length === 0) {
@@ -1590,26 +1670,81 @@ export default function CampaignsPage() {
                                                 {/* Specific Contacts sub-UI */}
                                                 {targetType === 'contacts' && (
                                                     <div className="border border-amber-500/20 rounded-lg p-3 bg-amber-500/5 space-y-2">
-                                                        <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                                                            <ListFilter className="h-3 w-3" /> Hand-pick individual contacts
-                                                        </span>
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                                                                <ListFilter className="h-3 w-3" /> Hand-pick individual contacts
+                                                            </span>
+                                                            {creationSelectedPhones.length > 0 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setCreationSelectedPhones([])}
+                                                                    className="text-[10px] text-muted-foreground hover:text-rose-500 transition-colors cursor-pointer"
+                                                                >
+                                                                    Clear selection ({creationSelectedPhones.length})
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                         <div className="relative">
                                                             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                                                            <input type="text" placeholder="Search contacts by name or phone..." value={contactSearch} onChange={e => setContactSearch(e.target.value)}
-                                                                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search contacts by name or phone..."
+                                                                value={contactSearch}
+                                                                onChange={e => setContactSearch(e.target.value)}
+                                                                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                                            />
+                                                            {isSearchingContacts && (
+                                                                <Loader2 className="absolute right-2.5 top-2.5 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                                                            )}
                                                         </div>
-                                                        <div className="max-h-44 overflow-y-auto rounded-md border border-border bg-background divide-y divide-border/60">
-                                                            {allContacts.filter((c: any) => c.name?.toLowerCase().includes(contactSearch.toLowerCase()) || c.phone?.includes(contactSearch)).map((c: any) => (
-                                                                <label key={c.id} className={`flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 text-xs cursor-pointer ${creationSelectedPhones.includes(c.phone) ? 'bg-amber-500/5' : ''}`}>
-                                                                    <input type="checkbox" checked={creationSelectedPhones.includes(c.phone)}
-                                                                        onChange={e => { if (e.target.checked) setCreationSelectedPhones([...creationSelectedPhones, c.phone]); else setCreationSelectedPhones(creationSelectedPhones.filter(p => p !== c.phone)); }}
-                                                                        className="rounded border-input text-primary" />
-                                                                    <span className="font-medium text-foreground truncate">{c.name}</span>
-                                                                    <span className="text-muted-foreground font-mono text-[10px] ml-auto">{c.phone}</span>
+                                                        <div className="max-h-48 overflow-y-auto rounded-md border border-border bg-background divide-y divide-border/60">
+                                                            {searchedContactList.length === 0 ? (
+                                                                <div className="p-3 text-center text-xs text-muted-foreground">
+                                                                    {contactSearch.trim() ? 'No matching contacts found' : 'No contacts available'}
+                                                                </div>
+                                                            ) : searchedContactList.map((c: any) => (
+                                                                <label key={c.id || c.phone} className={`flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 text-xs cursor-pointer ${creationSelectedPhones.includes(c.phone) ? 'bg-amber-500/5' : ''}`}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={creationSelectedPhones.includes(c.phone)}
+                                                                        onChange={e => {
+                                                                            if (e.target.checked) setCreationSelectedPhones(prev => Array.from(new Set([...prev, c.phone])));
+                                                                            else setCreationSelectedPhones(prev => prev.filter(p => p !== c.phone));
+                                                                        }}
+                                                                        className="rounded border-input text-primary"
+                                                                    />
+                                                                    <div className="flex flex-col min-w-0">
+                                                                        <span className="font-medium text-foreground truncate">{c.name || 'Unnamed'}</span>
+                                                                        {Array.isArray(c.tags) && c.tags.length > 0 && (
+                                                                            <span className="text-[10px] text-muted-foreground truncate">{c.tags.slice(0, 3).join(', ')}</span>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-muted-foreground font-mono text-[10px] ml-auto shrink-0">{c.phone}</span>
                                                                 </label>
                                                             ))}
                                                         </div>
-                                                        <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">{creationSelectedPhones.length} contacts selected</p>
+                                                        <div className="flex items-center justify-between pt-1">
+                                                            <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                                                                {creationSelectedPhones.length} contacts selected
+                                                            </p>
+                                                            {searchedContactList.length > 0 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const visiblePhones = searchedContactList.map((c: any) => c.phone).filter(Boolean);
+                                                                        const allVisibleSelected = visiblePhones.every((p: string) => creationSelectedPhones.includes(p));
+                                                                        if (allVisibleSelected) {
+                                                                            setCreationSelectedPhones(prev => prev.filter(p => !visiblePhones.includes(p)));
+                                                                        } else {
+                                                                            setCreationSelectedPhones(prev => Array.from(new Set([...prev, ...visiblePhones])));
+                                                                        }
+                                                                    }}
+                                                                    className="text-[10px] font-medium text-primary hover:underline cursor-pointer"
+                                                                >
+                                                                    Toggle Visible ({searchedContactList.length})
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 )}
 

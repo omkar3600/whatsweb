@@ -121,7 +121,7 @@ describe('CampaignProcessor consent queue validation', () => {
 
         expect(prisma.campaignContact.updateMany).toHaveBeenCalledWith({
             where: { id: { in: ['cc-2'] } },
-            data: { status: 'aborted', failReason: 'contact_opted_out' },
+            data: { status: 'aborted', failReason: 'contact_deleted' },
         });
     });
 });

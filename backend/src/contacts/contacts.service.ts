@@ -306,11 +306,12 @@ export class ContactsService {
                 };
             }
 
+            const limitNumber = limit ? parseInt(limit as string, 10) : 5000;
             const contacts = await this.prisma.contact.findMany({
                 where,
                 include,
                 orderBy,
-                take: 1000,
+                take: Math.min(limitNumber, 50000),
             });
             return contacts.map(mapContact);
         } catch (err: any) {

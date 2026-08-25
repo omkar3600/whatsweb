@@ -176,6 +176,63 @@ export class CampaignsService {
     }
 
     /**
+     * Live audience estimation for drafting / creating campaigns.
+     * Takes real-time filter criteria and evaluates accurately across all contacts in the database.
+     */
+    async estimateAudience(shopId: string, criteria: any = {}) {
+        const {
+            targetType,
+            targetTags,
+            targetPhones,
+            targetFilters,
+            audienceFilters,
+            excludeUnsubscribed,
+            excludeTags,
+        } = criteria;
+
+        const resolvedExcludeTags: string[] = [
+            ...(Array.isArray(excludeTags) ? excludeTags : []),
+            ...(Array.isArray(audienceFilters?.excludeTags) ? audienceFilters.excludeTags : []),
+            ...(Array.isArray(targetFilters?.excludeTags) ? targetFilters.excludeTags : []),
+        ].map((t: string) => String(t).trim()).filter(Boolean);
+
+        const includeConversations = Boolean(targetFilters?.noMessagesInDays);
+        const contacts = await this.prisma.contact.findMany({
+            where: { shopId },
+            select: {
+                id: true,
+                name: true,
+                phone: true,
+                tags: true,
+                city: true,
+                ...(includeConversations ? {
+                    conversations: { take: 1, orderBy: { lastMessageAt: 'desc' }, select: { lastMessageAt: true } }
+                } : {})
+            },
+        }) as any[];
+
+        const consentMap = await this.consentService.getConsentStatusMap(
+            shopId,
+            contacts.map((c) => c.id),
+        );
+
+        const result = evaluateAudience(contacts, consentMap, {
+            targetType,
+            targetTags: Array.isArray(targetTags) ? targetTags : undefined,
+            targetPhones: Array.isArray(targetPhones) ? targetPhones : undefined,
+            targetFilters: targetFilters || undefined,
+            audienceFilters: audienceFilters || undefined,
+            excludeUnsubscribed: excludeUnsubscribed ?? audienceFilters?.excludeUnsubscribed ?? false,
+            excludeTags: resolvedExcludeTags,
+        });
+
+        return {
+            mode: resolveMarketingMode(audienceFilters),
+            ...result,
+        };
+    }
+
+    /**
      * Compute the audience for a campaign WITHOUT sending anything: total contacts,
      * eligible after consent/audience filtering, excluded count, and a per-reason
      * breakdown. Used by the UI audience builder (GET /campaigns/:id/audience-preview).
@@ -186,6 +243,7 @@ export class CampaignsService {
         });
         if (!campaign) throw new NotFoundException('Campaign not found');
 
+        const includeConversations = Boolean((campaign.targetFilters as any)?.noMessagesInDays);
         const contacts = await this.prisma.contact.findMany({
             where: { shopId },
             select: {
@@ -194,7 +252,9 @@ export class CampaignsService {
                 phone: true,
                 tags: true,
                 city: true,
-                conversations: { take: 1, orderBy: { lastMessageAt: 'desc' }, select: { lastMessageAt: true } }
+                ...(includeConversations ? {
+                    conversations: { take: 1, orderBy: { lastMessageAt: 'desc' }, select: { lastMessageAt: true } }
+                } : {})
             },
         }) as any[];
 
@@ -205,6 +265,7 @@ export class CampaignsService {
 
         const result = evaluateAudience(contacts, consentMap, {
             targetTags: campaign.targetTags as string[],
+            targetPhones: campaign.targetPhones as string[],
             targetFilters: campaign.targetFilters as any,
             audienceFilters: campaign.audienceFilters as any,
             excludeUnsubscribed: ((campaign.stats as any)?.excludeUnsubscribed) ?? false,
