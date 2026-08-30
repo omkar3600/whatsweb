@@ -10,7 +10,7 @@ export class NtfyService {
 
   constructor(private configService: ConfigService) {
     this.ntfyUrl = this.configService.get<string>('NTFY_URL') || 'https://ntfy.sh';
-    this.defaultTopic = this.configService.get<string>('NTFY_TOPIC') || 'whatshub-alerts';
+    this.defaultTopic = this.configService.get<string>('NTFY_TOPIC') || 'whatsweb-alerts';
   }
 
   /**
@@ -58,7 +58,7 @@ export class NtfyService {
       message: `Tool '${action.toolName}' requested execution. ${action.rationale.slice(0, 100)}`,
       priority: action.riskLevel === 'CRITICAL' || action.riskLevel === 'HIGH' ? 5 : 3,
       tags: ['warning', 'robot', 'shield'],
-      actionUrl: `https://whatshub-frontend2.vercel.app/ai-agent/actions`,
+      actionUrl: `https://whatsweb-frontend2.vercel.app/ai-agent/actions`,
     });
   }
 
@@ -71,7 +71,7 @@ export class NtfyService {
       message: `'${campaign.name}' completed. Sent: ${campaign.totalSent}, Failed: ${campaign.totalFailed}`,
       priority: 3,
       tags: ['tada', 'megaphone'],
-      actionUrl: `https://whatshub-frontend2.vercel.app/campaigns/${campaign.id}`,
+      actionUrl: `https://whatsweb-frontend2.vercel.app/campaigns/${campaign.id}`,
     });
   }
 }

@@ -1,5 +1,5 @@
-// WhatsHub PWA & Offline Service Worker
-const CACHE_NAME = 'whatshub-offline-v4';
+// WhatsWeb PWA & Offline Service Worker
+const CACHE_NAME = 'whatsweb-offline-v4';
 const OFFLINE_URL = '/offline.html';
 
 // Install Event: Cache Offline Fallback Assets
@@ -8,7 +8,7 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
         OFFLINE_URL,
-        '/whatshub-logo.png',
+        '/whatsweb-logo.png',
         '/favicon.png',
         '/manifest.json'
       ]);
@@ -54,12 +54,12 @@ self.addEventListener('push', (event) => {
 
   try {
     const payload = event.data.json();
-    const title = payload.title || 'WhatsHub Notification';
+    const title = payload.title || 'WhatsWeb Notification';
     const options = {
       body: payload.body || 'New message received',
-      icon: payload.icon || '/whatshub-logo.png',
-      badge: payload.badge || '/whatshub-logo.png',
-      tag: payload.tag || 'whatshub-message',
+      icon: payload.icon || '/whatsweb-logo.png',
+      badge: payload.badge || '/whatsweb-logo.png',
+      tag: payload.tag || 'whatsweb-message',
       data: payload.data || { url: '/inbox' },
       vibrate: [100, 50, 100],
     };

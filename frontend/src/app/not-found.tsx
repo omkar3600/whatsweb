@@ -20,7 +20,7 @@ export default function NotFound() {
                         W
                     </div>
                     <span className="font-bold text-base tracking-tight text-slate-900">
-                        WhatsHub
+                        WhatsWeb
                     </span>
                 </Link>
 
@@ -114,7 +114,7 @@ export default function NotFound() {
 
             {/* Simple Footer */}
             <footer className="w-full max-w-5xl mx-auto px-6 py-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-                <span>WhatsHub WhatsApp Business Platform</span>
+                <span>WhatsWeb WhatsApp Business Platform</span>
                 <div className="flex items-center gap-4 text-xs">
                     <Link href="/privacy-policy" className="hover:text-slate-700">Privacy</Link>
                     <span>•</span>

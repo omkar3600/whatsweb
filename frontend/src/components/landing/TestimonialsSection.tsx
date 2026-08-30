@@ -10,7 +10,7 @@ const testimonials = [
     name: t('Sarah Mitchell'),
     company: t('RetailMax Group'),
     role: t('Head of Customer Success'),
-    review: t("WhatsHub transformed how we communicate with 80,000+ customers. Our campaign open rates jumped to 94% and support tickets dropped by 40%. The automation alone saved us 200+ hours per month."),
+    review: t("WhatsWeb transformed how we communicate with 80,000+ customers. Our campaign open rates jumped to 94% and support tickets dropped by 40%. The automation alone saved us 200+ hours per month."),
     rating: 5,
     gender: 'female',
     heritage: 'North American',
@@ -21,7 +21,7 @@ const testimonials = [
     name: t('Arjun Patel'),
     company: t('MedCare Solutions'),
     role: t('Operations Director'),
-    review: t("We automated appointment reminders and reduced no-shows by 60%. WhatsHub's reliability and WhatsApp integration is unlike anything else we've tried. Absolutely enterprise-grade."),
+    review: t("We automated appointment reminders and reduced no-shows by 60%. WhatsWeb's reliability and WhatsApp integration is unlike anything else we've tried. Absolutely enterprise-grade."),
     rating: 5,
     gender: 'male',
     heritage: 'South Asian',
@@ -32,7 +32,7 @@ const testimonials = [
     name: t('Fatima Al-Hassan'),
     company: t('EduConnect Academy'),
     role: t('Marketing Manager'),
-    review: t("Managing communication for 15,000 students was a nightmare. WhatsHub made it effortless. The broadcast campaigns and flow builder are incredibly powerful. Setup took under 30 minutes."),
+    review: t("Managing communication for 15,000 students was a nightmare. WhatsWeb made it effortless. The broadcast campaigns and flow builder are incredibly powerful. Setup took under 30 minutes."),
     rating: 5,
     gender: 'female',
     heritage: 'Middle Eastern',
@@ -54,7 +54,7 @@ export default function TestimonialsSection() {
             {t('Trusted by Growing Teams Worldwide')}
           </h2>
           <p className="text-lg text-muted-foreground font-body max-w-2xl mx-auto">
-            {t('Thousands of businesses use WhatsHub to transform their customer communication on WhatsApp.')}
+            {t('Thousands of businesses use WhatsWeb to transform their customer communication on WhatsApp.')}
           </p>
         </div>
 

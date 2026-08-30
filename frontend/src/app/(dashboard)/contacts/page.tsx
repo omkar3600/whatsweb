@@ -49,7 +49,7 @@ export default function ContactsPage() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('whatshub_contacts_limit');
+            const saved = localStorage.getItem('whatsweb_contacts_limit');
             if (saved) {
                 const parsed = parseInt(saved, 10);
                 if ([50, 100, 1000, 50000, 100000].includes(parsed)) return parsed;
@@ -878,7 +878,7 @@ export default function ContactsPage() {
                                 const newLimit = Number(e.target.value);
                                 setPageSize(newLimit);
                                 setPage(1);
-                                try { localStorage.setItem('whatshub_contacts_limit', newLimit.toString()); } catch {}
+                                try { localStorage.setItem('whatsweb_contacts_limit', newLimit.toString()); } catch {}
                             }}
                             className="bg-muted/30 border border-border rounded-lg px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hidden sm:inline-block"
                             title="Contacts per page"
@@ -1316,7 +1316,7 @@ export default function ContactsPage() {
                                             const newLimit = Number(e.target.value);
                                             setPageSize(newLimit);
                                             setPage(1);
-                                            try { localStorage.setItem('whatshub_contacts_limit', newLimit.toString()); } catch {}
+                                            try { localStorage.setItem('whatsweb_contacts_limit', newLimit.toString()); } catch {}
                                         }}
                                         className="bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                                     >

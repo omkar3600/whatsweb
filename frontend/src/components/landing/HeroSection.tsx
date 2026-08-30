@@ -82,7 +82,7 @@ export default function HeroSection() {
             <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-muted" />
             <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-muted" />
             <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-muted" />
-            <div className="flex-1 mx-2 md:mx-4 bg-input rounded text-[10px] md:text-xs text-muted-foreground px-2 md:px-3 py-1 text-center truncate">app.whatshub.io/dashboard</div>
+            <div className="flex-1 mx-2 md:mx-4 bg-input rounded text-[10px] md:text-xs text-muted-foreground px-2 md:px-3 py-1 text-center truncate">app.whatsweb.io/dashboard</div>
           </div>
           {/* Dashboard interior */}
           <div className="flex flex-col md:flex-row" style={{minHeight: '480px'}}>
@@ -95,7 +95,7 @@ export default function HeroSection() {
                     <path d="M12 2C6.477 2 2 6.477 2 12c0 1.9.525 3.677 1.438 5.196L2 22l4.937-1.417A9.953 9.953 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="white" strokeWidth="1.5" fill="none"/>
                   </svg>
                 </div>
-                <span className="text-dark-foreground text-sm font-bold font-headings">WhatsHub</span>
+                <span className="text-dark-foreground text-sm font-bold font-headings">WhatsWeb</span>
               </div>
               {[
                 {icon: 'message-square', label: 'Inbox', active: true},

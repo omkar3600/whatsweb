@@ -6,24 +6,24 @@ import Icon from '../ui/Icon';
 
 const faqs = [
   {
-    q: t('What is WhatsHub?'),
-    a: t('WhatsHub is an enterprise-grade WhatsApp Business API CRM and Marketing Automation Platform. It lets you manage conversations, run campaigns, build chatbots, and automate customer communication — all from one platform.'),
+    q: t('What is WhatsWeb?'),
+    a: t('WhatsWeb is an enterprise-grade WhatsApp Business API CRM and Marketing Automation Platform. It lets you manage conversations, run campaigns, build chatbots, and automate customer communication — all from one platform.'),
   },
   {
-    q: t('How does WhatsHub connect with WhatsApp?'),
-    a: t('WhatsHub uses the official WhatsApp Cloud API with an embedded Meta OAuth signup flow. You can connect your WhatsApp Business number in minutes without any technical setup.'),
+    q: t('How does WhatsWeb connect with WhatsApp?'),
+    a: t('WhatsWeb uses the official WhatsApp Cloud API with an embedded Meta OAuth signup flow. You can connect your WhatsApp Business number in minutes without any technical setup.'),
   },
   {
     q: t('Can I send bulk campaigns?'),
-    a: t('Yes! WhatsHub Broadcast Campaigns let you send personalized messages to thousands of contacts simultaneously, with scheduling, segmentation, delivery tracking, and read receipt analytics.'),
+    a: t('Yes! WhatsWeb Broadcast Campaigns let you send personalized messages to thousands of contacts simultaneously, with scheduling, segmentation, delivery tracking, and read receipt analytics.'),
   },
   {
     q: t('Can multiple agents use one WhatsApp number?'),
-    a: t('Absolutely. WhatsHub Unified Team Inbox supports unlimited agents sharing a single WhatsApp Business number with conversation assignment, internal notes, and real-time collaboration.'),
+    a: t('Absolutely. WhatsWeb Unified Team Inbox supports unlimited agents sharing a single WhatsApp Business number with conversation assignment, internal notes, and real-time collaboration.'),
   },
   {
-    q: t('Does WhatsHub support automation?'),
-    a: t('Yes. WhatsHub includes a Visual Flow Builder, Drip Campaign Automation, trigger-based sequences, and conditional logic for fully automated customer journeys.'),
+    q: t('Does WhatsWeb support automation?'),
+    a: t('Yes. WhatsWeb includes a Visual Flow Builder, Drip Campaign Automation, trigger-based sequences, and conditional logic for fully automated customer journeys.'),
   },
   {
     q: t('Can I build chatbots without coding?'),
@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     q: t('Is my customer data secure?'),
-    a: t('WhatsHub is GDPR compliant and uses enterprise-grade security including TLS encryption, role-based access, full data isolation, and comprehensive audit logging.'),
+    a: t('WhatsWeb is GDPR compliant and uses enterprise-grade security including TLS encryption, role-based access, full data isolation, and comprehensive audit logging.'),
   },
   {
     q: t('How long does setup take?'),
@@ -52,7 +52,7 @@ export default function FAQSection() {
             {t('Frequently Asked Questions')}
           </h2>
           <p className="text-lg text-muted-foreground font-body max-w-2xl mx-auto">
-            {t('Everything you need to know about WhatsHub.')}
+            {t('Everything you need to know about WhatsWeb.')}
           </p>
         </div>
 

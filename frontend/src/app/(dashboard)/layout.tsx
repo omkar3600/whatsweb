@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     useEffect(() => {
         if (user?.shopId) {
-            const cachedPic = localStorage.getItem(`whatshub_profile_pic_${user.shopId}`);
+            const cachedPic = localStorage.getItem(`whatsweb_profile_pic_${user.shopId}`);
             if (cachedPic) {
                 setProfilePicture(cachedPic);
             }
@@ -68,7 +68,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 api.get('/whatsapp/profile').then((res) => {
                     if (res.data?.profile_picture_url) {
                         setProfilePicture(res.data.profile_picture_url);
-                        localStorage.setItem(`whatshub_profile_pic_${user.shopId}`, res.data.profile_picture_url);
+                        localStorage.setItem(`whatsweb_profile_pic_${user.shopId}`, res.data.profile_picture_url);
                     }
                 }).catch(console.error);
             });
@@ -91,7 +91,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (typeof window !== 'undefined') {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js').then((reg) => {
-                    console.log('[SW] WhatsHub Push Service Worker Registered:', reg.scope);
+                    console.log('[SW] WhatsWeb Push Service Worker Registered:', reg.scope);
                 }).catch((err) => {
                     console.warn('[SW] Registration failed:', err);
                 });
@@ -134,11 +134,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
                 audio.play().catch(() => {});
                 
-                const notifTitle = `WhatsHub: ${msg.contact?.name || msg.contact?.phone || 'New Message'}`;
+                const notifTitle = `WhatsWeb: ${msg.contact?.name || msg.contact?.phone || 'New Message'}`;
                 const notifOptions = {
                     body: msg.content || 'Sent an attachment',
-                    icon: '/whatshub-logo.png',
-                    badge: '/whatshub-logo.png',
+                    icon: '/whatsweb-logo.png',
+                    badge: '/whatsweb-logo.png',
                     tag: 'new-message',
                     data: { url: '/inbox' }
                 };
@@ -225,8 +225,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <Menu className="h-5 w-5" />
                     </button>
                     <Link href="/dashboard" className="flex items-center gap-2">
-                        <img src="/whatshub-logo.png" alt="WhatsHub" className="h-7 w-7 rounded-lg object-cover" />
-                        <span className="text-sm font-semibold tracking-tight text-foreground">WhatsHub</span>
+                        <img src="/whatsweb-logo.png" alt="WhatsWeb" className="h-7 w-7 rounded-lg object-cover" />
+                        <span className="text-sm font-semibold tracking-tight text-foreground">WhatsWeb</span>
                     </Link>
                 </div>
                 <div className="flex items-center gap-2">
@@ -247,8 +247,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <aside className="relative flex flex-col w-72 max-w-[80%] bg-sidebar border-r border-sidebar-border h-full z-50 p-4 animate-in slide-in-from-left duration-200">
                         <div className="flex items-center justify-between pb-4 border-b border-sidebar-border">
                             <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-                                <img src="/whatshub-logo.png" alt="WhatsHub" className="h-7 w-7 rounded-lg object-cover" />
-                                <span className="text-sm font-bold text-sidebar-foreground">WhatsHub</span>
+                                <img src="/whatsweb-logo.png" alt="WhatsWeb" className="h-7 w-7 rounded-lg object-cover" />
+                                <span className="text-sm font-bold text-sidebar-foreground">WhatsWeb</span>
                             </Link>
                             <button
                                 onClick={() => setMobileOpen(false)}
@@ -317,12 +317,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className={`flex h-14 items-center justify-between border-b border-sidebar-border/70 px-4 ${isCollapsed ? 'justify-center px-0' : ''}`}>
                     <Link href="/dashboard" className="flex items-center gap-2.5 group">
                         <div className="relative p-0.5 rounded-xl bg-gradient-to-tr from-emerald-500/30 to-emerald-400/10 border border-emerald-500/20 shadow-xs transition-transform group-hover:scale-105 shrink-0">
-                            <img src="/whatshub-logo.png" alt="WhatsHub Logo" className="h-7 w-7 rounded-lg object-cover" />
+                            <img src="/whatsweb-logo.png" alt="WhatsWeb Logo" className="h-7 w-7 rounded-lg object-cover" />
                         </div>
                         {!isCollapsed && (
                             <div className="flex items-center gap-1.5">
                                 <span className="text-base font-extrabold tracking-tight bg-gradient-to-r from-emerald-600 via-teal-500 to-green-500 dark:from-emerald-400 dark:via-teal-300 dark:to-green-400 bg-clip-text text-transparent">
-                                    WhatsHub
+                                    WhatsWeb
                                 </span>
                             </div>
                         )}

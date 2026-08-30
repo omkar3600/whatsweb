@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
     {
       title: "1. Information We Collect",
       icon: <Database className="w-5 h-5" />,
-      content: "When you use WhatsHub, we collect information necessary to provide our WhatsApp automation services. This includes your shop name, contact information, and the phone numbers and names of the customers you interact with via WhatsApp."
+      content: "When you use WhatsWeb, we collect information necessary to provide our WhatsApp automation services. This includes your shop name, contact information, and the phone numbers and names of the customers you interact with via WhatsApp."
     },
     {
       title: "2. How We Use Your Information",
@@ -36,7 +36,7 @@ export default function PrivacyPolicy() {
     {
       title: "6. Contact Us",
       icon: <Mail className="w-5 h-5" />,
-      content: "If you have any questions regarding this Privacy Policy or our data practices, please contact us at support@whatshub.com."
+      content: "If you have any questions regarding this Privacy Policy or our data practices, please contact us at support@whatsweb.com."
     }
   ];
 
@@ -70,7 +70,7 @@ export default function PrivacyPolicy() {
             Privacy Policy
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Your trust is our priority. This policy outlines how WhatsHub handles your data and ensures your communications remain secure.
+            Your trust is our priority. This policy outlines how WhatsWeb handles your data and ensures your communications remain secure.
           </p>
           <div className="mt-12 text-sm opacity-50 font-medium">
             Last updated: {lastUpdated}
@@ -101,7 +101,7 @@ export default function PrivacyPolicy() {
         {/* Footer Note */}
         <footer className="mt-32 pt-12 border-t border-border text-center">
           <p className="text-muted-foreground text-sm opacity-60 font-medium">
-            &copy; 2026 WhatsHub Platform. All Professional Standards Applied.
+            &copy; 2026 WhatsWeb Platform. All Professional Standards Applied.
           </p>
         </footer>
       </main>

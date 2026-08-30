@@ -1,4 +1,4 @@
--- WhatsHub Marketing Consent Engine -- Database Migration
+-- WhatsWeb Marketing Consent Engine -- Database Migration
 -- Creates the contact marketing consent + audit log tables.
 -- This migration is ADDITIVE ONLY -- no data is modified or dropped.
 -- Consent state is fully independent from AI/chatbot logic (deterministic keyword matching).

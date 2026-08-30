@@ -87,7 +87,7 @@ export default function ApiKeysPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">API Credentials</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Manage API keys to integrate WhatsHub with external POS systems, CRMs, and custom webhooks.
+            Manage API keys to integrate WhatsWeb with external POS systems, CRMs, and custom webhooks.
           </p>
         </div>
         <button 
@@ -154,7 +154,7 @@ export default function ApiKeysPage() {
                 <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground">
                   <Key className="w-10 h-10 mx-auto mb-3 opacity-30" />
                   <p className="text-sm font-semibold text-foreground">No API Keys Generated</p>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">Create an API key to securely authenticate external systems with your WhatsHub workspace.</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">Create an API key to securely authenticate external systems with your WhatsWeb workspace.</p>
                 </td>
               </tr>
             ) : (

@@ -11,15 +11,15 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'WhatsHub — WhatsApp Business Platform',
+  title: 'WhatsWeb — WhatsApp Business Platform',
   description: 'Manage your WhatsApp Business communications, campaigns, and automations effortlessly.',
   icons: {
     icon: [
-      { url: '/whatshub-logo.png?v=2', type: 'image/png' },
+      { url: '/whatsweb-logo.png?v=2', type: 'image/png' },
       { url: '/favicon.png?v=2', type: 'image/png' },
     ],
-    apple: '/whatshub-logo.png?v=2',
-    shortcut: '/whatshub-logo.png?v=2',
+    apple: '/whatsweb-logo.png?v=2',
+    shortcut: '/whatsweb-logo.png?v=2',
   },
 };
 
@@ -31,13 +31,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("font-sans", geist.variable)}>
       <head>
-        <link rel="icon" href="/whatshub-logo.png?v=2" type="image/png" sizes="any" />
-        <link rel="shortcut icon" href="/whatshub-logo.png?v=2" type="image/png" />
-        <link rel="apple-touch-icon" href="/whatshub-logo.png?v=2" />
+        <link rel="icon" href="/whatsweb-logo.png?v=2" type="image/png" sizes="any" />
+        <link rel="shortcut icon" href="/whatsweb-logo.png?v=2" type="image/png" />
+        <link rel="apple-touch-icon" href="/whatsweb-logo.png?v=2" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="WhatsHub" />
+        <meta name="apple-mobile-web-app-title" content="WhatsWeb" />
         <meta name="theme-color" content="#0f172a" />
       </head>
       <body className={`${inter.className} bg-slate-50 text-slate-900 antialiased`}>

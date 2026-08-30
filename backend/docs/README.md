@@ -1,6 +1,6 @@
-# WhatsHub Official Documentation
+# WhatsWeb Official Documentation
 
-Welcome to the official technical documentation for **WhatsHub**. This directory contains the complete technical architecture, API references, database schemas, business logic flows, and onboarding guides for the project.
+Welcome to the official technical documentation for **WhatsWeb**. This directory contains the complete technical architecture, API references, database schemas, business logic flows, and onboarding guides for the project.
 
 This documentation is designed to serve the CTO, Senior Developers, QA, DevOps, Security Auditors, and AI Coding Agents.
 

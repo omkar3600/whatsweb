@@ -109,7 +109,7 @@ export function AdminCommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         {/* Shortcut Footer */}
         <div className="flex items-center justify-between border-t border-border px-4 py-2 bg-muted/30 text-[11px] text-muted-foreground font-mono">
           <span>Navigate with <kbd className="px-1 bg-card border border-border rounded">Esc</kbd> to exit</span>
-          <span>WhatsHub OS 3.0</span>
+          <span>WhatsWeb OS 3.0</span>
         </div>
       </div>
     </div>

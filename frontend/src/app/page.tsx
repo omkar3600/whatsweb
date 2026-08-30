@@ -1,9 +1,9 @@
-import WhatsHubLanding from '@/components/landing/WhatsHubLanding';
+import WhatsWebLanding from '@/components/landing/WhatsWebLanding';
 
 export default function LandingPage() {
   return (
     <div className="landing-theme">
-      <WhatsHubLanding />
+      <WhatsWebLanding />
     </div>
   );
 }

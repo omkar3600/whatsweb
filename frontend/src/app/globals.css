@@ -273,7 +273,7 @@
   --ring: #10b981;  
 } 
 
-/* WhatsHub Premium UI Animations */
+/* WhatsWeb Premium UI Animations */
 @keyframes button-shake {
   0%, 100% { transform: translateX(0); }
   20%, 60% { transform: translateX(-4px); }

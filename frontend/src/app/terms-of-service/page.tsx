@@ -11,12 +11,12 @@ export default function TermsOfService() {
     {
       title: "1. Acceptance of Terms",
       icon: <CheckCircle className="w-5 h-5" />,
-      content: "By accessing or using WhatsHub, you agree to be bound by these Terms of Service. If you do not agree to all of these terms, you do not have permission to access the service."
+      content: "By accessing or using WhatsWeb, you agree to be bound by these Terms of Service. If you do not agree to all of these terms, you do not have permission to access the service."
     },
     {
       title: "2. Description of Service",
       icon: <RefreshCw className="w-5 h-5" />,
-      content: "WhatsHub provides automated communication tools for WhatsApp Business. This includes flow builders, campaign management, and chatbot integration. We provide these services through the WhatsApp Business API."
+      content: "WhatsWeb provides automated communication tools for WhatsApp Business. This includes flow builders, campaign management, and chatbot integration. We provide these services through the WhatsApp Business API."
     },
     {
       title: "3. User Responsibilities",
@@ -31,7 +31,7 @@ export default function TermsOfService() {
     {
       title: "5. Limitation of Liability",
       icon: <AlertCircle className="w-5 h-5" />,
-      content: "WhatsHub shall not be liable for any indirect, incidental, or consequential damages resulting from the use or inability to use the service, including message delivery failures caused by WhatsApp/Meta."
+      content: "WhatsWeb shall not be liable for any indirect, incidental, or consequential damages resulting from the use or inability to use the service, including message delivery failures caused by WhatsApp/Meta."
     },
     {
       title: "6. Changes to Terms",
@@ -70,7 +70,7 @@ export default function TermsOfService() {
             Terms of Service
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Please read these terms carefully before using the WhatsHub platform. They govern your relationship with our service.
+            Please read these terms carefully before using the WhatsWeb platform. They govern your relationship with our service.
           </p>
           <div className="mt-12 text-sm opacity-50 font-medium">
             Last updated: {lastUpdated}
@@ -105,7 +105,7 @@ export default function TermsOfService() {
           <p className="text-muted-foreground mb-8 max-w-md mx-auto">
             Our legal and support teams are here to help you understand your rights and responsibilities.
           </p>
-          <a href="mailto:support@whatshub.com" className="inline-flex items-center gap-2 font-bold text-primary hover:underline">
+          <a href="mailto:support@whatsweb.com" className="inline-flex items-center gap-2 font-bold text-primary hover:underline">
             Contact Support Team <ChevronLeft className="w-4 h-4 rotate-180" />
           </a>
         </section>
@@ -113,7 +113,7 @@ export default function TermsOfService() {
         {/* Footer Note */}
         <footer className="mt-32 pt-12 border-t border-border text-center">
           <p className="text-muted-foreground text-sm opacity-60 font-medium">
-            &copy; 2026 WhatsHub Platform. Operating under Meta Business Agreement.
+            &copy; 2026 WhatsWeb Platform. Operating under Meta Business Agreement.
           </p>
         </footer>
       </main>

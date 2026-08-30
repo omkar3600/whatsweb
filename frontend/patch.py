@@ -1,6 +1,6 @@
 import re
 
-with open(r'd:\root\WhatsHub\frontend\src\app\(dashboard)\contacts\page.tsx', 'r', encoding='utf-8') as f:
+with open(r'd:\root\WhatsWeb\frontend\src\app\(dashboard)\contacts\page.tsx', 'r', encoding='utf-8') as f:
     content = f.read()
 
 # 1. Replace state and useSWR
@@ -112,7 +112,7 @@ content = content.replace('visibleContacts.map', 'contacts.map')
 content = content.replace('visibleCount < (fetchedData?.total || 0)', 'hasMore')
 content = content.replace('setVisibleCount(prev => prev + 100)', 'setPage(prev => prev + 1)')
 
-with open(r'd:\root\WhatsHub\frontend\src\app\(dashboard)\contacts\page.tsx', 'w', encoding='utf-8') as f:
+with open(r'd:\root\WhatsWeb\frontend\src\app\(dashboard)\contacts\page.tsx', 'w', encoding='utf-8') as f:
     f.write(content)
 
 print("Patch successful!")

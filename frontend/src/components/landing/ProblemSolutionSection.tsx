@@ -34,7 +34,7 @@ export default function ProblemSolutionSection() {
             {t('Managing WhatsApp at Scale is Hard')}
           </h2>
           <p className="text-lg text-muted-foreground font-body max-w-2xl mx-auto">
-            {t('WhatsHub centralizes support, sales, marketing, and automation into one unified platform.')}
+            {t('WhatsWeb centralizes support, sales, marketing, and automation into one unified platform.')}
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export default function ProblemSolutionSection() {
               <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
                 <Icon i="x-circle" size={16} />
               </div>
-              <h3 className="font-headings font-bold text-xl text-foreground">{t('Without WhatsHub')}</h3>
+              <h3 className="font-headings font-bold text-xl text-foreground">{t('Without WhatsWeb')}</h3>
             </div>
             <div className="flex flex-col gap-3">
               {problems.map((p, i) => (
@@ -66,7 +66,7 @@ export default function ProblemSolutionSection() {
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                 <Icon i="check-circle" size={16} />
               </div>
-              <h3 className="font-headings font-bold text-xl text-dark-foreground">{t('With WhatsHub')}</h3>
+              <h3 className="font-headings font-bold text-xl text-dark-foreground">{t('With WhatsWeb')}</h3>
             </div>
             <div className="flex flex-col gap-3 relative z-10">
               {solutions.map((s, i) => (

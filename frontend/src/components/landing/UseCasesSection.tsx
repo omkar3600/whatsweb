@@ -50,7 +50,7 @@ export default function UseCasesSection() {
             {t('Built for Every Industry')}
           </h2>
           <p className="text-lg text-muted-foreground font-body max-w-2xl mx-auto">
-            {t('WhatsHub adapts to your industry, enabling businesses of all kinds to communicate smarter on WhatsApp.')}
+            {t('WhatsWeb adapts to your industry, enabling businesses of all kinds to communicate smarter on WhatsApp.')}
           </p>
         </div>
 

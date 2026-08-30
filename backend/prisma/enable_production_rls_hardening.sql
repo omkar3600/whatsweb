@@ -1,5 +1,5 @@
 -- ============================================================================
--- WhatsHub Production Row Level Security (RLS) Hardening Migration
+-- WhatsWeb Production Row Level Security (RLS) Hardening Migration
 -- Enables RLS and tenant-isolation policies on all 44 public tables
 -- Safe for execution via Supabase SQL Editor, psql, or Prisma Migrate
 -- ============================================================================

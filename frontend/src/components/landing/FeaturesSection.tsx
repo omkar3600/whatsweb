@@ -76,7 +76,7 @@ export default function FeaturesSection() {
             {t('Everything You Need to Scale on WhatsApp')}
           </h2>
           <p className="text-lg text-muted-foreground font-body max-w-2xl mx-auto">
-            {t('From automation to analytics, WhatsHub gives your team superpowers to handle thousands of conversations with ease.')}
+            {t('From automation to analytics, WhatsWeb gives your team superpowers to handle thousands of conversations with ease.')}
           </p>
         </div>
 

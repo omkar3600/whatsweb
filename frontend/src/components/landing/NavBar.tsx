@@ -4,7 +4,7 @@ import { useAuth } from '@/components/providers';
 
 const t = (s: string) => s;
 export const displayName = 'NavBar';
-export const shortDescription = 'Top navigation bar for WhatsHub';
+export const shortDescription = 'Top navigation bar for WhatsWeb';
 
 export default function NavBar() {
   const { user } = useAuth();
@@ -19,7 +19,7 @@ export default function NavBar() {
             <path d="M12 2C6.477 2 2 6.477 2 12c0 1.9.525 3.677 1.438 5.196L2 22l4.937-1.417A9.953 9.953 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="white" strokeWidth="1.5" fill="none"/>
           </svg>
         </div>
-        <span className="font-headings font-bold text-xl text-foreground">WhatsHub</span>
+        <span className="font-headings font-bold text-xl text-foreground">WhatsWeb</span>
       </div>
       <div className="hidden lg:flex items-center gap-8">
         <a className="text-sm font-body text-muted-foreground">{t('')}</a>

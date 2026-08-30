@@ -1,4 +1,4 @@
--- WhatsHub Marketing Consent Engine -- Per-business config + campaign audience filters
+-- WhatsWeb Marketing Consent Engine -- Per-business config + campaign audience filters
 -- ADDITIVE ONLY -- no data is modified or dropped.
 
 -- CreateTable ShopConsentConfig (per-business configurable opt-in/opt-out keywords)

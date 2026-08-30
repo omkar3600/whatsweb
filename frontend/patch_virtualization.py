@@ -1,4 +1,4 @@
-with open(r'd:\root\WhatsHub\frontend\src\app\(dashboard)\inbox\page.tsx', 'r', encoding='utf-8') as f:
+with open(r'd:\root\WhatsWeb\frontend\src\app\(dashboard)\inbox\page.tsx', 'r', encoding='utf-8') as f:
     content = f.read()
 
 # Replace sidebar mapping with virtualizer
@@ -132,7 +132,7 @@ export default function InboxPage() {'''
 content = content.replace(old_sidebar, new_sidebar)
 content = content.replace(import_search, virtual_list_component)
 
-with open(r'd:\root\WhatsHub\frontend\src\app\(dashboard)\inbox\page.tsx', 'w', encoding='utf-8') as f:
+with open(r'd:\root\WhatsWeb\frontend\src\app\(dashboard)\inbox\page.tsx', 'w', encoding='utf-8') as f:
     f.write(content)
 
 print("Virtualization injected successfully!")

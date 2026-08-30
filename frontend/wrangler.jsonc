@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "whatshub-frontend2",
+  "name": "whatsweb-frontend2",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-08-10",
   "compatibility_flags": [
@@ -13,7 +13,7 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "whatshub-frontend2"
+      "service": "whatsweb-frontend2"
     }
   ]
 }

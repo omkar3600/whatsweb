@@ -374,7 +374,22 @@ export class CampaignsService {
         return campaign;
     }
 
-    async getCampaignAnalytics(shopId: string, campaignId: string) {
+    async getCampaignAnalytics(shopId: string, campaignId: string, limitQuery?: string | number) {
+        let limit: number | null = 50; // default to 50 rate limit
+        if (limitQuery !== undefined && limitQuery !== null) {
+            const str = String(limitQuery).trim().toLowerCase();
+            if (str === 'all' || str === '0' || str === 'unlimited' || str === '-1') {
+                limit = null;
+            } else {
+                const parsed = str.endsWith('k')
+                    ? parseFloat(str.replace('k', '')) * 1000
+                    : parseInt(str, 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                    limit = Math.floor(parsed);
+                }
+            }
+        }
+
         const campaign = await this.prisma.campaign.findFirst({
             where: { id: campaignId, shopId },
             include: {
@@ -479,10 +494,25 @@ export class CampaignsService {
             skipped: byStatus.skipped.length,
         };
 
+        const contacts = {
+            all: limit !== null ? byStatus.all.slice(0, limit) : byStatus.all,
+            pending: limit !== null ? byStatus.pending.slice(0, limit) : byStatus.pending,
+            dispatched: limit !== null ? byStatus.dispatched.slice(0, limit) : byStatus.dispatched,
+            sent: limit !== null ? byStatus.sent.slice(0, limit) : byStatus.sent,
+            delivered: limit !== null ? byStatus.delivered.slice(0, limit) : byStatus.delivered,
+            read: limit !== null ? byStatus.read.slice(0, limit) : byStatus.read,
+            replied: limit !== null ? byStatus.replied.slice(0, limit) : byStatus.replied,
+            clicked: limit !== null ? byStatus.clicked.slice(0, limit) : byStatus.clicked,
+            failed: limit !== null ? byStatus.failed.slice(0, limit) : byStatus.failed,
+            unread: limit !== null ? byStatus.unread.slice(0, limit) : byStatus.unread,
+            skipped: limit !== null ? byStatus.skipped.slice(0, limit) : byStatus.skipped,
+        };
+
         return {
             campaign,
             stats,
-            contacts: byStatus,
+            contacts,
+            limit: limit ?? 'all',
         };
     }
 

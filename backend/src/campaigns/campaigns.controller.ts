@@ -35,8 +35,12 @@ export class CampaignsController {
     }
 
     @Get(':id/analytics')
-    async getCampaignAnalytics(@GetUser() user: any, @Param('id') id: string) {
-        return this.campaignsService.getCampaignAnalytics(user.shopId, id);
+    async getCampaignAnalytics(
+        @GetUser() user: any,
+        @Param('id') id: string,
+        @Query('limit') limit?: string
+    ) {
+        return this.campaignsService.getCampaignAnalytics(user.shopId, id, limit);
     }
 
     @Get(':id/audience-preview')

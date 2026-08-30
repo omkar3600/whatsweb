@@ -435,7 +435,7 @@ export default function CampaignsPage() {
             await Promise.all(
                 targetCamps.map(async (camp) => {
                     try {
-                        const res = await api.get(`/campaigns/${camp.id}/analytics`);
+                        const res = await api.get(`/campaigns/${camp.id}/analytics?limit=all`);
                         const fcList = res.data?.contacts?.failed || [];
                         if (Array.isArray(fcList) && fcList.length > 0) {
                             for (const fc of fcList) {

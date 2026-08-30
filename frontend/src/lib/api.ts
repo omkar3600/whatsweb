@@ -9,7 +9,7 @@ export const fetcher = (url: string) => api.get(url).then(res => res.data);
 
 // Lightweight in-memory traffic instrumentation for development & diagnostics
 if (typeof window !== 'undefined') {
-    (window as any).__WHATSHUB_TRAFFIC__ = (window as any).__WHATSHUB_TRAFFIC__ || {
+    (window as any).__WHATSWEB_TRAFFIC__ = (window as any).__WHATSWEB_TRAFFIC__ || {
         totalRequests: 0,
         totalBytes: 0,
         byFeature: {} as Record<string, { requests: number; bytes: number; maxBytes: number }>,
@@ -60,7 +60,7 @@ api.interceptors.response.use(
                 }
             }
 
-            const store = (window as any).__WHATSHUB_TRAFFIC__;
+            const store = (window as any).__WHATSWEB_TRAFFIC__;
             if (store) {
                 store.totalRequests += 1;
                 store.totalBytes += bytes;

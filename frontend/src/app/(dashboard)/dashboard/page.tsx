@@ -151,7 +151,7 @@ export default function ShopDashboard() {
     // Time-based greeting
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-    const userName = data.shop?.shopName || 'WhatsHub';
+    const userName = data.shop?.shopName || 'WhatsWeb';
 
     // System status from WhatsApp accounts
     const whatsappAccounts = data.shop?.whatsappAccounts || [];

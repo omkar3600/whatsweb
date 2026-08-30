@@ -27,7 +27,7 @@ export default function IntegrationsSection() {
             {t('Works With Your Existing Stack')}
           </h2>
           <p className="text-lg text-muted-foreground font-body max-w-2xl mx-auto">
-            {t('Connect WhatsHub with the tools and infrastructure your team already uses.')}
+            {t('Connect WhatsWeb with the tools and infrastructure your team already uses.')}
           </p>
         </div>
 

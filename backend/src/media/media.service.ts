@@ -13,7 +13,7 @@ export class MediaService {
         const accountId = process.env.R2_ACCOUNT_ID || '';
         const accessKeyId = process.env.R2_ACCESS_KEY_ID || '';
         const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || '';
-        this.bucketName = process.env.R2_BUCKET_NAME || 'whatshub-media';
+        this.bucketName = process.env.R2_BUCKET_NAME || 'whatsweb-media';
         this.publicUrl = process.env.R2_PUBLIC_URL || ''; // e.g. https://media.yourdomain.com
 
         this.s3 = new S3Client({

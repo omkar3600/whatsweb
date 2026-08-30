@@ -1,6 +1,6 @@
-# WhatsHub
+# WhatsWeb
 
-WhatsHub is a WhatsApp Marketing & Automation Platform featuring a NestJS backend and Next.js frontend with AI Chatbot integration.
+WhatsWeb is a WhatsApp Marketing & Automation Platform featuring a NestJS backend and Next.js frontend with AI Chatbot integration.
 
 ## Architecture
 

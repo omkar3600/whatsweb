@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const src = 'C:/Users/omkar/.gemini/antigravity/brain/04b5b188-4a75-45cd-b50d-f91a1e12c3b3/scratch/banani_components';
-const dest = 'd:/Salescope/WhatsHub/frontend/src/components/landing';
+const dest = 'd:/Salescope/WhatsWeb/frontend/src/components/landing';
 
 fs.readdirSync(src).filter(f => f.endsWith('.jsx')).forEach(f => {
   let content = fs.readFileSync(path.join(src, f), 'utf-8');
@@ -21,8 +21,8 @@ fs.readdirSync(src).filter(f => f.endsWith('.jsx')).forEach(f => {
     content = content.replace(/<a className="font-medium(.*?)>[\s\S]*?\{t\('Login'\)\}[\s\S]*?<\/a>/g, '<a href="/login" className="font-medium$1><Icon i="log-in" size={17} />{t(\'Login\')}</a>');
   }
   
-  if (f === 'WhatsHubLanding.jsx') {
-    content = content.replace(/export default \(\) => \(/g, 'export default function WhatsHubLanding() { return (');
+  if (f === 'WhatsWebLanding.jsx') {
+    content = content.replace(/export default \(\) => \(/g, 'export default function WhatsWebLanding() { return (');
     content = content.replace(/;\n$/g, ';}');
   }
   

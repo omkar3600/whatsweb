@@ -74,9 +74,9 @@ export function AdminSidebar() {
           <aside className="relative flex flex-col w-72 max-w-[80%] bg-sidebar border-r border-sidebar-border h-full z-50 p-4 animate-in slide-in-from-left duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-sidebar-border">
               <Link href="/admin/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileOpen(false)}>
-                <img src="/whatshub-logo.png" alt="WhatsHub Logo" className="h-8 w-8 rounded-lg object-cover shrink-0" />
+                <img src="/whatsweb-logo.png" alt="WhatsWeb Logo" className="h-8 w-8 rounded-lg object-cover shrink-0" />
                 <div>
-                  <span className="text-sm font-bold text-sidebar-foreground tracking-tight">WhatsHub Admin</span>
+                  <span className="text-sm font-bold text-sidebar-foreground tracking-tight">WhatsWeb Admin</span>
                   <span className="block text-[10px] text-sidebar-foreground/50">Control Center</span>
                 </div>
               </Link>
@@ -143,12 +143,12 @@ export function AdminSidebar() {
         <div className={`flex h-14 items-center justify-between border-b border-sidebar-border/70 px-4 ${isCollapsed ? 'justify-center px-0' : ''}`}>
           <Link href="/admin/dashboard" className="flex items-center gap-2.5 group">
             <div className="relative p-0.5 rounded-xl bg-gradient-to-tr from-blue-500/30 to-indigo-400/10 border border-blue-500/20 shadow-xs transition-transform group-hover:scale-105 shrink-0">
-              <img src="/whatshub-logo.png" alt="WhatsHub Logo" className="h-7 w-7 rounded-lg object-cover" />
+              <img src="/whatsweb-logo.png" alt="WhatsWeb Logo" className="h-7 w-7 rounded-lg object-cover" />
             </div>
             {!isCollapsed && (
               <div className="flex items-center gap-1.5">
                 <span className="text-base font-extrabold tracking-tight bg-gradient-to-r from-blue-600 via-indigo-500 to-sky-500 dark:from-blue-400 dark:via-indigo-300 dark:to-sky-400 bg-clip-text text-transparent">
-                  WhatsHub
+                  WhatsWeb
                 </span>
                 <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tracking-wider">ADMIN</span>
               </div>

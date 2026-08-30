@@ -1,7 +1,7 @@
 # Section 1: Executive Overview
 
 ## 1.1 Project Purpose
-WhatsHub is an enterprise-grade WhatsApp Cloud API CRM and marketing automation platform. It allows businesses ("Shops") to connect their WhatsApp Business accounts to a centralized dashboard to manage conversations, run bulk messaging campaigns, create automated conversational flows, and orchestrate complex messaging sequences. 
+WhatsWeb is an enterprise-grade WhatsApp Cloud API CRM and marketing automation platform. It allows businesses ("Shops") to connect their WhatsApp Business accounts to a centralized dashboard to manage conversations, run bulk messaging campaigns, create automated conversational flows, and orchestrate complex messaging sequences. 
 
 ## 1.2 Business Problem Solved
 Managing customer communication at scale on WhatsApp is impossible through the standard mobile app. Businesses need a way to:
@@ -9,7 +9,7 @@ Managing customer communication at scale on WhatsApp is impossible through the s
 - Send targeted marketing campaigns (broadcasts) to segmented customer lists.
 - Automate repetitive tasks using chatbots and rule-based flows.
 - Ensure 100% reliability, compliance, and delivery tracking.
-WhatsHub provides a scalable, centralized platform to solve these communication bottlenecks.
+WhatsWeb provides a scalable, centralized platform to solve these communication bottlenecks.
 
 ## 1.3 Target Users
 - **Shop Owners / Admins:** Configure WhatsApp integrations, manage templates, view analytics, and manage billing.
@@ -25,7 +25,7 @@ WhatsHub provides a scalable, centralized platform to solve these communication 
 6. **Embedded Signup:** Frictionless Meta/Facebook OAuth integration for instant WhatsApp Business API connection.
 
 ## 1.5 High-Level Architecture
-WhatsHub uses a modern, decoupled architecture:
+WhatsWeb uses a modern, decoupled architecture:
 - **Frontend:** Next.js (React), TailwindCSS, Zustand (State Management).
 - **Backend:** NestJS (Node.js framework), strictly typed with TypeScript.
 - **Database:** PostgreSQL managed via Prisma ORM.

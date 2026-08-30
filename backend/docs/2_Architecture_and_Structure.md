@@ -2,7 +2,7 @@
 
 ## 2.1 System Architecture
 
-WhatsHub utilizes a standard decoupled client-server architecture augmented with background workers and real-time WebSockets.
+WhatsWeb utilizes a standard decoupled client-server architecture augmented with background workers and real-time WebSockets.
 
 - **Frontend Architecture:** Next.js Server-Side Rendered (SSR) Application serving Static Assets and API Proxies. State is managed locally via React Hooks and Zustand, with Axios handling backend communication.
 - **Backend Architecture:** A modular NestJS monolith. The application is divided into highly cohesive domain modules (Auth, Contacts, Campaigns, etc.). It heavily relies on Dependency Injection.

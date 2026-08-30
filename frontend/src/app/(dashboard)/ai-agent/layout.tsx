@@ -29,7 +29,7 @@ export default function AiAgentLayout({ children }: { children: React.ReactNode 
             <div className="flex items-center gap-2.5">
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">WhatsApp AI Engine</h1>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <Sparkles className="h-3 w-3" /> WHATSHUB PRO
+                <Sparkles className="h-3 w-3" /> WHATSWEB PRO
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">

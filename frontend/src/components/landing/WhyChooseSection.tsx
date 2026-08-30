@@ -1,6 +1,6 @@
 const t = (s: string) => s;
 export const displayName = 'Why Choose Section';
-export const shortDescription = 'Why choose WhatsHub feature cards';
+export const shortDescription = 'Why choose WhatsWeb feature cards';
 
 import Icon from '../ui/Icon';
 
@@ -22,7 +22,7 @@ export default function WhyChooseSection() {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground text-xs font-medium px-4 py-1.5 rounded-xl mb-5 font-body">
             <Icon i="star" size={12} />
-            {t('Why WhatsHub')}
+            {t('Why WhatsWeb')}
           </div>
           <h2 className="font-headings font-bold text-4xl text-foreground mb-4" style={{letterSpacing: '-0.5px'}}>
             {t('Enterprise-Grade From the Ground Up')}

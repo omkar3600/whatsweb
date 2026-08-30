@@ -48,14 +48,14 @@ export default function DemoPage() {
                 <div className="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
                     <Link href="/" className="inline-block">
                         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#25D366]/10 shadow-lg shadow-[#25D366]/5 transition-transform hover:scale-105">
-                            <img src="/whatshub-logo.png" alt="WhatsHub Logo" className="h-12 w-12 rounded-xl object-cover" />
+                            <img src="/whatsweb-logo.png" alt="WhatsWeb Logo" className="h-12 w-12 rounded-xl object-cover" />
                         </div>
                     </Link>
                     <h1 className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
                         Book a Demo
                     </h1>
                     <p className="mt-3 text-gray-500 font-medium">
-                        See how WhatsHub can transform your business.
+                        See how WhatsWeb can transform your business.
                     </p>
                 </div>
 
@@ -229,7 +229,7 @@ export default function DemoPage() {
 
                 {/* Security Footer */}
                 <p className="mt-10 text-center text-xs text-gray-400 font-medium">
-                    &copy; 2024 WhatsHub Messaging. Secure & Encrypted Connection.
+                    &copy; 2024 WhatsWeb Messaging. Secure & Encrypted Connection.
                 </p>
             </div>
         </div>

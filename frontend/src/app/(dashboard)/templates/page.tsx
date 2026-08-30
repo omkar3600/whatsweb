@@ -272,7 +272,7 @@ export default function TemplatesPage() {
         setConfirmState({
             open: true,
             title: 'Delete Template',
-            description: 'Warning: This will permanently delete the template from WhatsHub and Meta. Any campaigns using this template will also be deleted.',
+            description: 'Warning: This will permanently delete the template from WhatsWeb and Meta. Any campaigns using this template will also be deleted.',
             action: async () => {
                 try {
                     await api.delete(`/templates/${id}`);

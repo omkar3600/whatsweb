@@ -1,6 +1,6 @@
 {
-  "name": "WhatsHub — WhatsApp Business Platform",
-  "short_name": "WhatsHub",
+  "name": "WhatsWeb — WhatsApp Business Platform",
+  "short_name": "WhatsWeb",
   "description": "Manage your WhatsApp Business communications, campaigns, and automations effortlessly.",
   "start_url": "/inbox",
   "display": "standalone",
@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/whatshub-logo.png",
+      "src": "/whatsweb-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/whatshub-logo.png",
+      "src": "/whatsweb-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

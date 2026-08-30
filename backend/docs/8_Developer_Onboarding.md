@@ -1,6 +1,6 @@
 # Section 8: Developer Onboarding & Knowledge Transfer
 
-Welcome to the WhatsHub engineering team! This guide will help you understand how to navigate and modify the codebase safely.
+Welcome to the WhatsWeb engineering team! This guide will help you understand how to navigate and modify the codebase safely.
 
 ## 8.1 New Developer Onboarding
 

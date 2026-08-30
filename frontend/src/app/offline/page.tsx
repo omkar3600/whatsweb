@@ -23,7 +23,7 @@ export default function OfflinePage() {
                     W
                 </div>
                 <span className="font-bold text-sm tracking-tight text-slate-900">
-                    WhatsHub
+                    WhatsWeb
                 </span>
             </header>
 
@@ -61,7 +61,7 @@ export default function OfflinePage() {
 
             {/* Footer */}
             <footer className="text-center text-xs text-slate-400">
-                WhatsHub
+                WhatsWeb
             </footer>
         </div>
     );

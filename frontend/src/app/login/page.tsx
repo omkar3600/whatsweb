@@ -57,13 +57,13 @@ export default function LoginPage() {
                 {/* Logo & Header */}
                 <div className="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
                     <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#25D366]/10 shadow-lg shadow-[#25D366]/5">
-                        <img src="/whatshub-logo.png" alt="WhatsHub Logo" className="h-12 w-12 rounded-xl object-cover" />
+                        <img src="/whatsweb-logo.png" alt="WhatsWeb Logo" className="h-12 w-12 rounded-xl object-cover" />
                     </div>
                     <h1 className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
                         Welcome Back
                     </h1>
                     <p className="mt-3 text-gray-500 font-medium">
-                        Log into WhatsHub Account
+                        Log into WhatsWeb Account
                     </p>
                 </div>
 
@@ -135,7 +135,7 @@ export default function LoginPage() {
 
                 {/* Security Footer */}
                 <p className="mt-10 text-center text-xs text-gray-400 font-medium">
-                    &copy; 2024 WhatsHub Messaging. Secure & Encrypted Connection.
+                    &copy; 2024 WhatsWeb Messaging. Secure & Encrypted Connection.
                 </p>
             </div>
         </div>

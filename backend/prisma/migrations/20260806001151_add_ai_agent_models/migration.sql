@@ -1,4 +1,4 @@
--- WhatsHub AI Business Agent System -- Database Migration
+-- WhatsWeb AI Business Agent System -- Database Migration
 -- Adds AI columns to existing tables and creates all new AI models
 -- This migration is ADDITIVE ONLY -- no data is modified or dropped
 

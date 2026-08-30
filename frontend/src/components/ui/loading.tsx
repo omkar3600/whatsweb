@@ -13,7 +13,7 @@ export function Loading() {
             </div>
             
             <div className="flex flex-col items-center gap-1">
-                <h3 className="text-base font-semibold text-foreground tracking-tight">WhatsHub</h3>
+                <h3 className="text-base font-semibold text-foreground tracking-tight">WhatsWeb</h3>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                     <span>Securing workspace</span>
                     <div className="flex gap-1">

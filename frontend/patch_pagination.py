@@ -1,4 +1,4 @@
-with open(r'd:\root\WhatsHub\frontend\src\app\(dashboard)\contacts\page.tsx', 'r', encoding='utf-8') as f:
+with open(r'd:\root\WhatsWeb\frontend\src\app\(dashboard)\contacts\page.tsx', 'r', encoding='utf-8') as f:
     content = f.read()
 
 old_btn = '''                            {hasMore && (
@@ -21,7 +21,7 @@ new_btn = '''                            <div className="p-4 flex items-center j
 
 content = content.replace(old_btn, new_btn)
 
-with open(r'd:\root\WhatsHub\frontend\src\app\(dashboard)\contacts\page.tsx', 'w', encoding='utf-8') as f:
+with open(r'd:\root\WhatsWeb\frontend\src\app\(dashboard)\contacts\page.tsx', 'w', encoding='utf-8') as f:
     f.write(content)
 
 print("Pagination UI updated!")

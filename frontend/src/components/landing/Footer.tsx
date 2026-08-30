@@ -37,7 +37,7 @@ export default function Footer() {
                   <path d="M12 2C6.477 2 2 6.477 2 12c0 1.9.525 3.677 1.438 5.196L2 22l4.937-1.417A9.953 9.953 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="white" strokeWidth="1.5" fill="none"/>
                 </svg>
               </div>
-              <span className="font-headings font-bold text-lg text-dark-foreground">WhatsHub</span>
+              <span className="font-headings font-bold text-lg text-dark-foreground">WhatsWeb</span>
             </div>
             <p className="text-sm font-body leading-relaxed mb-5" style={{color: 'rgba(226,232,240,0.55)'}}>
               {t('Enterprise WhatsApp CRM & Marketing Automation Platform.')}
@@ -58,7 +58,7 @@ export default function Footer() {
         </div>
 
         <div className="flex items-center justify-between pt-8 border-t" style={{borderColor: 'rgba(255,255,255,0.08)'}}>
-          <span className="text-xs font-body" style={{color: 'rgba(226,232,240,0.4)'}}>{t('© 2024 WhatsHub. All rights reserved.')}</span>
+          <span className="text-xs font-body" style={{color: 'rgba(226,232,240,0.4)'}}>{t('© 2024 WhatsWeb. All rights reserved.')}</span>
           <div className="flex items-center gap-2 text-xs font-body" style={{color: 'rgba(226,232,240,0.4)'}}>
             <Icon i="shield-check" size={12} />
             {t('Official WhatsApp Cloud API Partner')}

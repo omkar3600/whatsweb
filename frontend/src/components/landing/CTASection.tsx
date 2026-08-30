@@ -21,7 +21,7 @@ export default function CTASection() {
           <span className="text-primary">{t('on WhatsApp?')}</span>
         </h2>
         <p className="text-lg font-body max-w-2xl mx-auto mb-10 leading-relaxed" style={{color: 'rgba(226,232,240,0.75)'}}>
-          {t('Join businesses using WhatsHub to automate conversations, increase engagement, and drive more sales — all through WhatsApp.')}
+          {t('Join businesses using WhatsWeb to automate conversations, increase engagement, and drive more sales — all through WhatsApp.')}
         </p>
 
         <div className="flex items-center justify-center gap-4 mb-12">

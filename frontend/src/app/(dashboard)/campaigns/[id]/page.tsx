@@ -12,7 +12,7 @@ import {
     Download, RefreshCw, ShieldAlert, Search, MessageCircleReply,
     ChartNoAxesCombined, X, Sparkles, Filter, Rocket, Info,
     AlertTriangle, CornerDownRight, Check,
-    ShieldOff
+    ShieldOff, SlidersHorizontal
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -22,6 +22,8 @@ import { Button } from '@/components/ui/button';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+type LimitOption = '50' | '200' | '500' | '1000' | '10k' | 'all';
+
 interface CampaignContact {
     id: string;
     phone: string;
@@ -71,6 +73,7 @@ interface Analytics {
         unread: CampaignContact[];
         skipped: CampaignContact[];
     };
+    limit?: string | number;
 }
 
 type Tab = 'all' | 'pending' | 'dispatched' | 'sent' | 'delivered' | 'read' | 'replied' | 'unread' | 'clicked' | 'failed';
@@ -121,10 +124,15 @@ export default function CampaignAnalyticsPage() {
     const router = useRouter();
     const id = params.id as string;
 
-    const { data: analytics, mutate, isLoading, error } = useSWR<Analytics>(id ? `/campaigns/${id}/analytics` : null, {
-        // Only poll while campaign is actively processing — stop polling once done
-        refreshInterval: (data) => data?.campaign?.status === 'processing' ? 10000 : 0,
-    });
+    const [limit, setLimit] = useState<LimitOption>('50');
+
+    const { data: analytics, mutate, isLoading, isValidating, error } = useSWR<Analytics>(
+        id ? `/campaigns/${id}/analytics?limit=${limit}` : null,
+        {
+            // Only poll while campaign is actively processing — stop polling once done
+            refreshInterval: (data) => data?.campaign?.status === 'processing' ? 10000 : 0,
+        }
+    );
     const { data: fetchedTemplates } = useSWR('/templates');
     const templates = fetchedTemplates || [];
 
@@ -172,6 +180,20 @@ export default function CampaignAnalyticsPage() {
         }
         return list;
     }, [analytics, activeTab, searchQuery]);
+
+    const totalInTab = useMemo(() => {
+        if (!analytics?.stats) return tabContacts.length;
+        if (activeTab === 'all') return analytics.stats.total ?? ((analytics.contacts as any)?.all?.length || 0);
+        if (activeTab === 'pending') return analytics.stats.pending ?? (analytics.contacts.pending?.length || 0);
+        if (activeTab === 'dispatched') return analytics.stats.dispatched ?? (analytics.contacts.dispatched?.length || 0);
+        if (activeTab === 'sent') return analytics.stats.sent ?? (analytics.contacts.sent?.length || 0);
+        if (activeTab === 'delivered') return analytics.stats.delivered ?? (analytics.contacts.delivered?.length || 0);
+        if (activeTab === 'read') return analytics.stats.read ?? (analytics.contacts.read?.length || 0);
+        if (activeTab === 'replied') return analytics.stats.replied ?? (analytics.contacts.replied?.length || 0);
+        if (activeTab === 'unread') return analytics.stats.unread ?? (analytics.contacts.unread?.length || 0);
+        if (activeTab === 'failed') return analytics.stats.failed ?? (analytics.contacts.failed?.length || 0);
+        return (analytics.stats as any)[activeTab] ?? tabContacts.length;
+    }, [analytics, activeTab, tabContacts.length]);
 
     const selectedContactsList = useMemo(() => {
         if (!analytics || selectedPhones.size === 0) return [];
@@ -381,7 +403,12 @@ export default function CampaignAnalyticsPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        toast.success(`Exported ${tabContacts.length} contacts to CSV`);
+
+        if (limit !== 'all' && totalInTab > tabContacts.length) {
+            toast.info(`Exported ${tabContacts.length} loaded contacts. (Select 'All' in the limit selector to export all ${totalInTab.toLocaleString()})`);
+        } else {
+            toast.success(`Exported ${tabContacts.length} contacts to CSV`);
+        }
     };
 
     if (isLoading) {
@@ -699,19 +726,11 @@ export default function CampaignAnalyticsPage() {
                         {(['all', 'pending', 'dispatched', 'sent', 'delivered', 'read', 'replied', 'unread', 'failed'] as const).map(tab => {
                             let count = 0;
                             if (tab === 'all') {
-                                count = analytics.contacts.all?.length || 0;
+                                count = analytics.stats.total ?? ((analytics.contacts as any)?.all?.length || 0);
                             } else if (tab === 'pending') {
-                                if (analytics.contacts.pending && analytics.contacts.pending.length > 0) {
-                                    count = analytics.contacts.pending.length;
-                                } else {
-                                    const allList: CampaignContact[] = (analytics.contacts as any).all || [];
-                                    count = allList.filter(c => {
-                                        const s = (c.status || '').toLowerCase();
-                                        return s === 'pending' || s === 'scheduled' || s === 'queued' || (!['sent', 'delivered', 'read', 'replied', 'clicked', 'failed'].includes(s));
-                                    }).length;
-                                }
+                                count = analytics.stats.pending ?? (analytics.contacts.pending?.length || 0);
                             } else {
-                                count = (analytics.contacts[tab as keyof typeof analytics.contacts]?.length || 0);
+                                count = (analytics.stats as any)[tab] ?? (analytics.contacts[tab as keyof typeof analytics.contacts]?.length || 0);
                             }
 
                             return (
@@ -728,10 +747,55 @@ export default function CampaignAnalyticsPage() {
                                     }`}
                                 >
                                     <span>{tab}</span>
-                                    <span className="text-[10px] opacity-75 font-mono">({count})</span>
+                                    <span className="text-[10px] opacity-75 font-mono">({count.toLocaleString()})</span>
                                 </button>
                             );
                         })}
+                    </div>
+                </div>
+
+                {/* Audience Limit & Count Summary Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+                    <div className="flex items-center gap-2 flex-wrap text-xs">
+                        <span className="text-muted-foreground">
+                            Showing <strong className="text-foreground font-semibold">{tabContacts.length.toLocaleString()}</strong> of <strong className="text-foreground font-semibold">{totalInTab.toLocaleString()}</strong> recipients
+                        </span>
+                        {limit !== 'all' && totalInTab > tabContacts.length && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                                Showing {limit === '10k' ? '10,000' : limit}
+                            </span>
+                        )}
+                        {isValidating && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground animate-pulse">
+                                <Loader2 className="h-3 w-3 animate-spin text-primary" /> Loading...
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                        <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                            <SlidersHorizontal className="h-3.5 w-3.5" />
+                            Show limit:
+                        </span>
+                        <div className="inline-flex items-center rounded-lg border border-border bg-card p-0.5 shadow-2xs">
+                            {(['50', '200', '500', '1000', '10k', 'all'] as const).map(opt => (
+                                <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => {
+                                        setLimit(opt);
+                                        setSelectedPhones(new Set());
+                                    }}
+                                    className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                                        limit === opt
+                                            ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                                    }`}
+                                >
+                                    {opt === 'all' ? 'All' : opt === '10k' ? '10k' : opt}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -744,74 +808,103 @@ export default function CampaignAnalyticsPage() {
                             {searchQuery && <p>Try clearing your search terms.</p>}
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-xs text-left">
-                                <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-semibold tracking-wider border-b border-border">
-                                    <tr>
-                                        <th className="px-4 py-3 w-10 text-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedPhones.size > 0 && selectedPhones.size === tabContacts.length}
-                                                onChange={toggleAll}
-                                                className="rounded border-input text-primary cursor-pointer"
-                                            />
-                                        </th>
-                                        <th className="px-4 py-3">Contact Name</th>
-                                        <th className="px-4 py-3">Phone Number</th>
-                                        <th className="px-4 py-3">Transmission Status</th>
-                                        <th className="px-4 py-3">Timestamp</th>
-                                        <th className="px-4 py-3 text-right">Action / Diagnostic</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border/60">
-                                    {tabContacts.map(c => {
-                                        const isChecked = selectedPhones.has(c.phone);
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-xs text-left">
+                                    <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-semibold tracking-wider border-b border-border">
+                                        <tr>
+                                            <th className="px-4 py-3 w-10 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedPhones.size > 0 && selectedPhones.size === tabContacts.length}
+                                                    onChange={toggleAll}
+                                                    className="rounded border-input text-primary cursor-pointer"
+                                                />
+                                            </th>
+                                            <th className="px-4 py-3">Contact Name</th>
+                                            <th className="px-4 py-3">Phone Number</th>
+                                            <th className="px-4 py-3">Transmission Status</th>
+                                            <th className="px-4 py-3">Timestamp</th>
+                                            <th className="px-4 py-3 text-right">Action / Diagnostic</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/60">
+                                        {tabContacts.map(c => {
+                                            const isChecked = selectedPhones.has(c.phone);
 
-                                        return (
-                                            <tr key={c.id || c.phone} className={`hover:bg-muted/30 transition-colors ${isChecked ? 'bg-primary/5' : ''}`}>
-                                                <td className="px-4 py-3 text-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        onChange={() => togglePhone(c.phone)}
-                                                        className="rounded border-input text-primary cursor-pointer"
-                                                    />
-                                                </td>
-                                                <td className="px-4 py-3 font-semibold text-foreground">
-                                                    {c.name || 'Unnamed Contact'}
-                                                </td>
-                                                <td className="px-4 py-3 font-mono text-muted-foreground">
-                                                    {c.phone}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <StatusBadge status={c.status} />
-                                                </td>
-                                                <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                                                    {c.sentAt ? format(new Date(c.sentAt), 'MMM d, yyyy • HH:mm') : '—'}
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    {c.status === 'failed' ? (
-                                                        <span className="inline-flex items-center gap-1 text-[11px] text-rose-600 dark:text-rose-400 font-mono bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                                                            <AlertCircle className="h-3 w-3 shrink-0" />
-                                                            {c.failReason || 'Delivery Failed'}
-                                                        </span>
-                                                    ) : c.status === 'replied' ? (
-                                                        <Link
-                                                            href={`/inbox?phone=${c.phone}`}
-                                                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                                                        >
-                                                            <MessageCircleReply className="h-3.5 w-3.5" /> Open Chat
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="text-muted-foreground text-[11px]">—</span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                            return (
+                                                <tr key={c.id || c.phone} className={`hover:bg-muted/30 transition-colors ${isChecked ? 'bg-primary/5' : ''}`}>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => togglePhone(c.phone)}
+                                                            className="rounded border-input text-primary cursor-pointer"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 font-semibold text-foreground">
+                                                        {c.name || 'Unnamed Contact'}
+                                                    </td>
+                                                    <td className="px-4 py-3 font-mono text-muted-foreground">
+                                                        {c.phone}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <StatusBadge status={c.status} />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                                                        {c.sentAt ? format(new Date(c.sentAt), 'MMM d, yyyy • HH:mm') : '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        {c.status === 'failed' ? (
+                                                            <span className="inline-flex items-center gap-1 text-[11px] text-rose-600 dark:text-rose-400 font-mono bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                                                                <AlertCircle className="h-3 w-3 shrink-0" />
+                                                                {c.failReason || 'Delivery Failed'}
+                                                            </span>
+                                                        ) : c.status === 'replied' ? (
+                                                            <Link
+                                                                href={`/inbox?phone=${c.phone}`}
+                                                                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                                                            >
+                                                                <MessageCircleReply className="h-3.5 w-3.5" /> Open Chat
+                                                            </Link>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-[11px]">—</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {limit !== 'all' && totalInTab > tabContacts.length && (
+                                <div className="px-4 py-3 bg-muted/20 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+                                    <span>
+                                        Displaying first <strong className="text-foreground font-semibold">{tabContacts.length.toLocaleString()}</strong> of <strong className="text-foreground font-semibold">{totalInTab.toLocaleString()}</strong> {activeTab} recipients.
+                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-[11px] font-medium">Load more:</span>
+                                        {(['200', '500', '1000', '10k', 'all'] as const).map(opt => (
+                                            <button
+                                                key={opt}
+                                                type="button"
+                                                onClick={() => {
+                                                    setLimit(opt);
+                                                    setSelectedPhones(new Set());
+                                                }}
+                                                className={`px-2.5 py-1 text-xs rounded-md border transition-all cursor-pointer ${
+                                                    limit === opt
+                                                        ? 'bg-primary text-primary-foreground font-semibold border-primary shadow-xs'
+                                                        : 'bg-background hover:bg-muted text-foreground border-border'
+                                                }`}
+                                            >
+                                                {opt === 'all' ? 'All' : opt === '10k' ? '10k' : opt}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
