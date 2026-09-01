@@ -10,8 +10,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
 export default function WorkflowsListPage() {
   const [workflows, setWorkflows] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,11 +21,8 @@ export default function WorkflowsListPage() {
   const fetchWorkflows = async () => {
     if (!shopId) return;
     try {
-      const res = await fetch(`${API_BASE}/workflows?shopId=${shopId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setWorkflows(data);
-      }
+      const res = await api.get('/workflows', { params: { shopId } });
+      setWorkflows(res.data || []);
     } catch (e) {
       console.error('Failed to load workflows', e);
       toast.error('Failed to load workflows');
@@ -45,16 +40,9 @@ export default function WorkflowsListPage() {
   const createWorkflow = async () => {
     if (!shopId) return;
     try {
-      const res = await fetch(`${API_BASE}/workflows`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopId, name: 'New Automation Workflow' })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        toast.success('Workflow created');
-        window.location.href = `/workflows/${data.id}/builder`;
-      }
+      const res = await api.post('/workflows', { shopId, name: 'New Automation Workflow' });
+      toast.success('Workflow created');
+      window.location.href = `/workflows/${res.data.id}/builder`;
     } catch (e) {
       console.error(e);
       toast.error('Failed to create workflow');

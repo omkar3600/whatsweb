@@ -1,7 +1,15 @@
 import axios from 'axios';
 
+export const getCleanUrl = (url?: string, fallback = 'http://localhost:3001'): string => {
+    if (!url) return fallback;
+    return url.trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '');
+};
+
+export const API_BASE_URL = getCleanUrl(process.env.NEXT_PUBLIC_API_URL, 'http://localhost:3001');
+export const SOCKET_BASE_URL = getCleanUrl(process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL, 'http://localhost:3001');
+
 export const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+    baseURL: API_BASE_URL,
     withCredentials: true,
 });
 

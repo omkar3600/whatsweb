@@ -12,6 +12,7 @@ import {
     ChevronRight
 } from 'lucide-react';
 import { Loading, PageLoading } from '@/components/ui/loading';
+import { SOCKET_BASE_URL } from '@/lib/api';
 
 interface NavSection {
     title: string;
@@ -105,7 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     useEffect(() => {
         if (!user?.shopId) return;
 
-        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+        const socketUrl = SOCKET_BASE_URL;
         const socketToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
         const socket = io(socketUrl, { 
             reconnectionAttempts: 10,

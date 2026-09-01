@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, API_BASE_URL } from '@/lib/api';
 import {
     Settings, Shield, MessageSquare, Save, ExternalLink, Smartphone, Info,
     User as UserIcon, Lock, Loader2, Camera, Edit3, Image as ImageIcon,
@@ -384,12 +384,12 @@ export default function RetailerSettingsPage() {
                                             type="text"
                                             readOnly
                                             className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs font-mono text-muted-foreground"
-                                            value={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/webhooks/whatsapp?shopId=${shop?.id || ''}`}
+                                            value={`${API_BASE_URL}/webhooks/whatsapp?shopId=${shop?.id || ''}`}
                                         />
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/webhooks/whatsapp?shopId=${shop?.id}`);
+                                                navigator.clipboard.writeText(`${API_BASE_URL}/webhooks/whatsapp?shopId=${shop?.id}`);
                                                 toast.success('Callback URL copied to clipboard');
                                             }}
                                             className="px-3 py-2 bg-card hover:bg-muted border border-border rounded-lg text-xs font-medium text-foreground transition-colors shrink-0"

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, Suspense, useMemo } from 'react';
 import { useAuth } from '@/components/providers';
-import { api } from '@/lib/api';
+import { api, SOCKET_BASE_URL } from '@/lib/api';
 import { io, Socket } from 'socket.io-client';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
@@ -381,7 +381,7 @@ function InboxContent() {
     // Socket.io Real-time connection
     useEffect(() => {
         fetchConversations();
-        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+        const socketUrl = SOCKET_BASE_URL;
         const socketToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
         socketRef.current = io(socketUrl, {
             reconnectionAttempts: 10,
